@@ -1,6 +1,6 @@
 <h1 align="center">Dustoff</h1>
 
-<p align="center"><b>Drop in your games and play.</b><br>A free, controller-first launcher for classic consoles on Windows. It sets up the emulators for you, so there are no setup screens to fight with.</p>
+<p align="center"><b>Drag and drop your games in and play.</b><br>A free, controller-first launcher for classic consoles on Windows. It sets up the emulators for you, so there are no setup screens to fight with.</p>
 
 <p align="center">
   <a href="https://github.com/Eshkidu/dustoff/releases/latest/download/DustoffSetup-Public.exe">
