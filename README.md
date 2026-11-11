@@ -31,7 +31,7 @@
 ## What it does
 
 - **Drag and drop.** Drop game files, zips or a whole folder onto the window. Each game is recognized, sorted by system and gets its cover art.
-- **Xbox controller everywhere.** Menus, search, an on-screen keyboard and an in-game menu (hold View + Menu).
+- **Controller everywhere.** Menus, search, an on-screen keyboard and an in-game menu (hold View + Menu). Built for Xbox controllers today, with support for PlayStation, Switch Pro, 8BitDo and other controllers coming soon.
 - **Your buttons, your way.** Remap any console button per system, or per game.
 - **Continue where you left off.** Quitting saves your spot automatically on supported systems.
 - **Themes.** Ten original looks inspired by different console eras, each with its own menu sounds.
