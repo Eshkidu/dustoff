@@ -3,10 +3,15 @@
 <p align="center"><b>Drop in your games and play.</b><br>A free, controller-first launcher for classic consoles on Windows. It sets up the emulators for you, so there are no setup screens to fight with.</p>
 
 <p align="center">
-  <a href="https://github.com/Eshkidu/dustoff/releases/latest/download/DustoffSetup-Public.exe"><img src="screenshots/download-button.svg" alt="Download Dustoff for Windows" width="440"></a>
+  <a href="https://github.com/Eshkidu/dustoff/releases/latest/download/DustoffSetup-Public.exe">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="screenshots/download-dark.svg">
+      <img src="screenshots/download-light.svg" alt="Download for Windows" width="300">
+    </picture>
+  </a>
 </p>
 
-<p align="center"><sub>One click downloads the installer. Open it, wait about a minute, and Dustoff starts.<br>If Windows says "Windows protected your PC", click <b>More info</b>, then <b>Run anyway</b>.</sub></p>
+<p align="center"><sub>v0.1.0 · 328 MB · from <a href="../../releases">GitHub Releases</a> · Free and open source<br>Open the installer, wait about a minute, and Dustoff starts. If Windows says "Windows protected your PC", click <b>More info</b>, then <b>Run anyway</b>.</sub></p>
 
 ![Dustoff home screen](screenshots/home.png)
 
