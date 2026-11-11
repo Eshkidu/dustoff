@@ -30,7 +30,7 @@ function send(ch, data) {
 const CONTROL_DEFS = controls.forRenderer();
 function snapshot() {
   const db = store.get();
-  return { games: db.games, settings: db.settings, systems: SYS, controls: CONTROL_DEFS };
+  return { games: db.games, settings: db.settings, systems: SYS, controls: CONTROL_DEFS, version: app.getVersion() };
 }
 const changed = () => send('lib:changed', snapshot());
 
@@ -63,6 +63,7 @@ function createWindows() {
     fullscreen: full,
     show: false,
     title: 'Dustoff',
+    icon: path.join(__dirname, 'icon', 'dustoff.ico'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -674,6 +675,11 @@ async function recheck() {
   }
 }
 ipcMain.handle('selftest:info', () => SELFTEST);
+ipcMain.handle('selftest:shot', async (_e, name) => {
+  if (!SELFTEST || !/^[a-z0-9-]{1,30}$/.test(name)) return;
+  const img = await hub.webContents.capturePage();
+  fs.writeFileSync(path.join(P.cache, `selftest-${name}.png`), img.toPNG());
+});
 ipcMain.on('selftest:done', (_e, r) => {
   try {
     fs.writeFileSync(

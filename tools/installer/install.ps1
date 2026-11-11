@@ -32,20 +32,21 @@ try {
   if (-not (Test-Path (Join-Path $dest 'resources\app\main.js')) -or -not (Test-Path (Join-Path $dest 'Dustoff.exe'))) { throw "Unpacking failed (code $($p.ExitCode))." }
 
   $exe = Join-Path $dest 'Dustoff.exe'
+  $icon = Join-Path $dest 'resources\app\icon\dustoff.ico'
   if (-not $NoShortcuts) {
     $label.Text = 'Adding shortcuts...'; Pump 50
     $sh = New-Object -ComObject WScript.Shell
     $places = @([Environment]::GetFolderPath('Desktop'), (Join-Path ([Environment]::GetFolderPath('Programs')) ''))
     foreach ($dir in $places) {
       $lnk = $sh.CreateShortcut((Join-Path $dir 'Dustoff.lnk'))
-      $lnk.TargetPath = $exe; $lnk.WorkingDirectory = $dest; $lnk.IconLocation = "$exe,0"; $lnk.Description = 'Play your Nintendo games'
+      $lnk.TargetPath = $exe; $lnk.WorkingDirectory = $dest; $lnk.IconLocation = "$icon,0"; $lnk.Description = 'Play your classic games'
       $lnk.Save()
     }
     $key = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\Dustoff'
     New-Item -Path $key -Force | Out-Null
     $ver = (Get-Content (Join-Path $dest 'version.txt') -ErrorAction SilentlyContinue | Select-Object -First 1)
     $size = [int]((Get-ChildItem $dest -Recurse -File -ErrorAction SilentlyContinue | Measure-Object Length -Sum).Sum / 1KB)
-    $vals = @{ DisplayName = 'Dustoff'; DisplayVersion = "$ver"; Publisher = 'Dustoff'; InstallLocation = $dest; DisplayIcon = "$exe,0"; NoModify = 1; NoRepair = 1; EstimatedSize = $size
+    $vals = @{ DisplayName = 'Dustoff'; DisplayVersion = "$ver"; Publisher = 'Dustoff'; InstallLocation = $dest; DisplayIcon = "$icon,0"; NoModify = 1; NoRepair = 1; EstimatedSize = $size
       UninstallString = "powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$dest\uninstall.ps1`"" }
     foreach ($k in $vals.Keys) { Set-ItemProperty -Path $key -Name $k -Value $vals[$k] }
   }

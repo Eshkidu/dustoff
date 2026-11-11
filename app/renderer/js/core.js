@@ -98,13 +98,33 @@ const PF_COLORS = {
   red: 'radial-gradient(circle at 35% 30%, #ffb3a1, #d93b2f)',
   gray: 'radial-gradient(circle at 35% 30%, #e6e8ec, #7b828b)',
 };
+// Each badge color comes with the mascot in a mood that fits it.
+const PF_MOODS = {
+  orange: 'happy',
+  blue: 'sleepy',
+  green: 'normal',
+  pink: 'happy',
+  purple: 'sleepy',
+  red: 'surprised',
+  gray: 'normal',
+};
+const badgeStyle = color =>
+  `background:url('img/mascot-${PF_MOODS[color] || 'normal'}.png') center 62% / 84% auto no-repeat, ${PF_COLORS[color] || PF_COLORS.orange}`;
 function profile() {
   const p = LIB.settings.profile || {};
   const avatar = p.icon
     ? `background-image:url('${fileUrl(p.icon)}?v=${encodeURIComponent(p.icon.slice(-18))}')`
-    : `background:${PF_COLORS[p.color] || PF_COLORS.orange}`;
+    : badgeStyle(p.color);
   return { name: p.name || 'Player 1', color: p.color || 'orange', icon: p.icon || '', avatar };
 }
+/* The mascot, one picture per mood. */
+const MASCOT = {
+  normal: 'img/mascot-normal.png',
+  happy: 'img/mascot-happy.png',
+  sleepy: 'img/mascot-sleepy.png',
+  surprised: 'img/mascot-surprised.png',
+};
+const mascotImg = (mood, cls = '') => `<img class="mascot ${cls}" src="${MASCOT[mood]}" alt="" draggable="false">`;
 const SAMPLE = [
   ['Mario Kart Wii', 'wii'],
   ['Super Mario 3D World', 'wiiu'],

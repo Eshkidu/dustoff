@@ -43,7 +43,7 @@ fs.renameSync(path.join(STAGE, 'electron.exe'), path.join(STAGE, 'Dustoff.exe'))
 step('Hub app');
 const appOut = path.join(STAGE, 'resources', 'app');
 for (const f of ['main.js', 'preload.js', 'package.json']) copy(path.join(APP, f), path.join(appOut, f));
-for (const d of ['lib', 'renderer', 'overlay'])
+for (const d of ['lib', 'renderer', 'overlay', 'icon'])
   copy(path.join(APP, d), path.join(appOut, d), r => /\.bak$|\.bak-/.test(r));
 copy(
   path.join(APP, 'node_modules', 'koffi'),

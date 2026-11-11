@@ -4,6 +4,7 @@ function homeRender() {
   if (!LIB.games.length && !PENDING.size) {
     return /* HTML */ `<div class="d empty">
       <div class="empty-card">
+        ${mascotImg('normal', 'mascot-empty')}
         <h1>Drag your games here</h1>
         <p>
           Drop game files, zip files or a whole folder anywhere on this window. Each game is recognized, copied into
@@ -113,6 +114,7 @@ function libGrid() {
     );
   if (!L.length)
     return /* HTML */ `<p class="lb-empty">
+      ${mascotImg(state.q ? 'surprised' : 'normal')}
       ${state.q ? `No games match "${esc(state.q)}".` : 'No games here yet. Drag some onto this window.'}
     </p>`;
   return L.map(

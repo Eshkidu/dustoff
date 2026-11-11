@@ -18,8 +18,9 @@ const die = m => {
   console.log('\n' + m + '\n');
   process.exit(1);
 };
+// Output shown live in the window (stdio: 'inherit') comes back as null, so default to ''.
 const run = (cmd, args, opts = {}) =>
-  execFileSync(cmd, args, Object.assign({ encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }, opts)).trim();
+  String(execFileSync(cmd, args, Object.assign({ encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }, opts)) ?? '').trim();
 const tryRun = (cmd, args, opts) => {
   try {
     return run(cmd, args, opts);
@@ -98,6 +99,10 @@ const ask = q =>
   copy(__dirname, path.join(REPO, 'tools'));
   // README, LICENSE and screenshots live in tools/repo and go to the top of the published repo.
   copy(path.join(__dirname, 'repo'), REPO);
+  // Fill the version and installer size shown under the download button.
+  const readme = path.join(REPO, 'README.md');
+  const mb = Math.round(fs.statSync(INSTALLER).size / 1048576) + ' MB';
+  fs.writeFileSync(readme, fs.readFileSync(readme, 'utf8').replace(/\{\{VERSION\}\}/g, ver).replace(/\{\{SIZE\}\}/g, mb));
   for (const f of ['.prettierrc.json', '.prettierignore']) fs.copyFileSync(path.join(ROOT, f), path.join(REPO, f));
   fs.writeFileSync(path.join(REPO, '.gitignore'), 'node_modules/\ndist/\ndata/\ngames/\nemulators/\n*.bak*\n');
   // Same personal-info guard as the installer build.
@@ -123,7 +128,7 @@ const ask = q =>
 
 **Download:** DustoffSetup-Public.exe below. Double-click, wait about a minute, and Dustoff opens.
 
-- Windows 10/11, 64-bit. An Xbox controller is recommended.
+- Windows 10/11, 64-bit. An Xbox controller is recommended for now. Support for more controllers is coming.
 - Windows may show "Windows protected your PC". Click **More info**, then **Run anyway**.
 - Dustoff does not include any games, BIOS files, keys or firmware. Use your own copies of games you own.
 - Built in: RetroArch (NES, SNES, N64, Game Boy, GBC, GBA), Dolphin (GameCube, Wii), Cemu (Wii U).

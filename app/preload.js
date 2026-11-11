@@ -33,5 +33,6 @@ contextBridge.exposeInMainWorld('hub', {
   overlayAction: name => ipcRenderer.send('overlay:action', name),
   selftestInfo: () => ipcRenderer.invoke('selftest:info'),
   selftestDone: r => ipcRenderer.send('selftest:done', r),
+  selftestShot: name => ipcRenderer.invoke('selftest:shot', name),
   on,
 });

@@ -75,6 +75,7 @@ async function launchGame(id, resume) {
   $('#l-title').textContent = g.title;
   $('#l-msg').textContent = `${resume ? 'Continuing' : 'Starting'} in ${SYS(g.sys).emu}…`;
   $('#l-bar').classList.remove('done');
+  $('#l-mascot').src = MASCOT.sleepy;
   launchEl.hidden = false;
   rumble();
   sfx('start');
@@ -82,13 +83,14 @@ async function launchGame(id, resume) {
   if (!r || r.error) {
     launchEl.hidden = true;
     launchingId = null;
-    toast(r ? r.error : 'Something went wrong starting the game.');
+    toast(r ? r.error : 'Something went wrong starting the game.', 'surprised');
   }
 }
 api.on('game:state', d => {
   if (d.running) {
     state.running = true;
     $('#l-bar').classList.add('done');
+    $('#l-mascot').src = MASCOT.happy;
     $('#l-msg').textContent =
       'Playing. Hold View + Menu on your controller for the in-game menu. Quit from there to come back here.';
   } else {
@@ -155,17 +157,32 @@ async function removeSel() {
 
 /* ---------- adding games ---------- */
 let toastTimer;
-function toast(msg) {
+// mood: 'happy' | 'sleepy' | 'surprised' | 'normal' shows the mascot next to the message.
+function toast(msg, mood) {
   const t = $('#toast');
-  t.textContent = msg;
+  t.textContent = '';
+  if (mood && MASCOT[mood]) {
+    const img = new Image();
+    img.src = MASCOT[mood];
+    img.alt = '';
+    img.className = 'toast-mascot';
+    t.appendChild(img);
+  }
+  const text = document.createElement('span');
+  text.textContent = msg;
+  t.appendChild(text);
+  t.classList.toggle('with-mascot', !!mood);
   t.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove('show'), 5200);
 }
-api.on('toast', toast);
+// Messages from the main process: pick a mood from what they say.
+api.on('toast', m =>
+  toast(m, /^Added /.test(m) ? 'happy' : /couldn't|can't|failed|missing|not found|need/i.test(m) ? 'surprised' : null),
+);
 async function addPaths(paths) {
   if (!paths.length) return;
-  toast(`Adding ${paths.length === 1 ? 'your game' : paths.length + ' items'}…`);
+  toast(`Adding ${paths.length === 1 ? 'your game' : paths.length + ' items'}…`, 'sleepy');
   const r = await api.addPaths(paths);
   const parts = [...(r.installed || [])];
   if (r.added.length === 1) parts.push(`Added ${r.added[0].title} to ${SYS(r.added[0].sys).name}.`);
@@ -188,7 +205,13 @@ async function addPaths(paths) {
     if (state.screen === 'settings') state.screen = 'home';
     render();
   }
-  toast(parts.join(' ') || 'Nothing to add.');
+  const mood =
+    r.added.length || (r.installed || []).length
+      ? 'happy'
+      : r.unknown.length || r.failed.length
+        ? 'surprised'
+        : 'normal';
+  toast(parts.join(' ') || 'Nothing to add.', mood);
 }
 $('#addbtn').addEventListener('click', () => $('#filein').click());
 $('#filein').addEventListener('change', e => {

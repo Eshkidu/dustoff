@@ -1,5 +1,29 @@
 /* Dustoff renderer: Settings screen. */
 /* ---------- Settings ---------- */
+// About card: version, link, and the mascot's four moods with where each one shows up.
+function aboutCard() {
+  const moods = [
+    ['normal', 'Normal', 'Empty library, and searches with no results'],
+    ['happy', 'Happy', 'When a game is added, and while you play'],
+    ['sleepy', 'Sleepy', 'While a game is being added or starting'],
+    ['surprised', 'Surprised', 'When something goes wrong'],
+  ];
+  return /* HTML */ `<section class="card wide">
+    <h2>About Dustoff</h2>
+    <p>
+      Version ${esc(LIB.version || '')} ·
+      <a href="https://github.com/Eshkidu/dustoff" target="_blank" rel="noopener">github.com/Eshkidu/dustoff</a>
+    </p>
+    <div class="mascots">
+      ${moods
+        .map(
+          ([m, name, where]) =>
+            `<figure>${mascotImg(m)}<figcaption><b>${name}</b><span>${where}</span></figcaption></figure>`,
+        )
+        .join('')}
+    </div>
+  </section>`;
+}
 function settingsRender() {
   const s = LIB.settings,
     ra = s.ra || {};
@@ -88,8 +112,8 @@ function settingsRender() {
                   data-f
                   data-act="pf-color"
                   data-color="${k}"
-                  style="background:${v}"
-                  aria-label="${k} badge"
+                  style="${badgeStyle(k)}"
+                  aria-label="${k} badge with a ${PF_MOODS[k]} mascot"
                   title="${k}"
                 ></button>`,
             )
@@ -103,7 +127,7 @@ function settingsRender() {
   return /* HTML */ `<div class="d d-st">
     <div class="st-wrap">
       <h1>Settings</h1>
-      ${pfCard}${ctlCard}
+      ${pfCard}${ctlCard}${aboutCard()}
       <section class="card">
         <h2>Display</h2>
         <button class="toggle${s.startFullscreen ? ' on' : ''}" data-f data-act="fs-start">
