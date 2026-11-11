@@ -15,7 +15,7 @@ Drop in your games and play. Dustoff is a free, controller-first launcher for cl
   </tr>
 </table>
 
-<sub>Screenshots show free homebrew games.</sub>
+<sub>Screenshots show a sample library with made-up games.</sub>
 
 ## What it does
 
