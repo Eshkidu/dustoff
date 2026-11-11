@@ -1,0 +1,19 @@
+{
+  "name": "game-launcher-hub",
+  "productName": "Dustoff",
+  "version": "0.1.0",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "format": "prettier --ignore-path ../.prettierignore --write main.js preload.js lib renderer/js renderer/*.css renderer/index.html overlay ../tools/*.js",
+    "check": "node ../tools/check.js"
+  },
+  "dependencies": {
+    "koffi": "2.16.3"
+  },
+  "devDependencies": {
+    "electron": "44.11.1",
+    "prettier": "3.9.10"
+  }
+}

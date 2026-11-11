@@ -1,0 +1,233 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'"
+    />
+    <title>In-game menu</title>
+    <style>
+      :root {
+        --ink: #f4f1fa;
+        --dim: #a9a3bb;
+        --panel: #14111ce8;
+        --line: #ffffff1f;
+        --a: #3fae5a;
+        --b: #d9483b;
+      }
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: transparent;
+        font-family: 'Segoe UI Variable Display', 'Segoe UI', system-ui, sans-serif;
+        color: var(--ink);
+        overflow: hidden;
+        user-select: none;
+      }
+      .dim {
+        position: fixed;
+        inset: 0;
+        background: linear-gradient(90deg, #05040acc 0%, #05040a80 45%, #05040a33 100%);
+        opacity: 0;
+        transition: opacity 0.18s;
+      }
+      .menu {
+        position: fixed;
+        left: 6vw;
+        top: 50%;
+        transform: translate(-12px, -50%);
+        opacity: 0;
+        transition:
+          opacity 0.18s,
+          transform 0.18s;
+        width: min(420px, 80vw);
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 22px;
+        padding: 26px;
+        box-shadow: 0 30px 80px #000a;
+        backdrop-filter: blur(16px);
+      }
+      body.open .dim {
+        opacity: 1;
+      }
+      body.open .menu {
+        opacity: 1;
+        transform: translate(0, -50%);
+      }
+      .eyebrow {
+        margin: 0;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--dim);
+      }
+      h1 {
+        margin: 6px 0 4px;
+        font-size: 26px;
+        line-height: 1.15;
+        font-weight: 700;
+      }
+      .meta {
+        margin: 0 0 18px;
+        color: var(--dim);
+        font-size: 14px;
+      }
+      ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      li {
+        padding: 14px 16px;
+        border-radius: 12px;
+        font-size: 17px;
+        font-weight: 600;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+      }
+      li small {
+        color: var(--dim);
+        font-weight: 500;
+        font-size: 13px;
+      }
+      li.sel {
+        background: #fff;
+        color: #0c0a12;
+      }
+      li.sel small {
+        color: #4a4558;
+      }
+      .hints {
+        display: flex;
+        gap: 16px;
+        margin-top: 18px;
+        font-size: 13px;
+        color: var(--dim);
+      }
+      .g {
+        display: inline-grid;
+        place-items: center;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        color: #fff;
+        font-weight: 800;
+        font-size: 11px;
+        margin-right: 6px;
+      }
+      .toast {
+        position: fixed;
+        left: 6vw;
+        bottom: 8vh;
+        background: #fff;
+        color: #111;
+        padding: 10px 16px;
+        border-radius: 10px;
+        font-weight: 600;
+        opacity: 0;
+        transition: opacity 0.2s;
+      }
+      .toast.show {
+        opacity: 1;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="dim"></div>
+    <div class="menu" role="menu">
+      <p class="eyebrow" id="sys"></p>
+      <h1 id="title"></h1>
+      <p class="meta" id="meta"></p>
+      <ul id="list"></ul>
+      <div class="hints">
+        <span><span class="g" style="background: var(--a)">A</span>Select</span
+        ><span><span class="g" style="background: var(--b)">B</span>Back to game</span>
+      </div>
+    </div>
+    <div class="toast" id="toast"></div>
+    <script>
+      const list = document.getElementById('list');
+      let items = [],
+        sel = 0,
+        busy = false;
+      const fmt = s => {
+        const h = Math.floor(s / 3600),
+          m = Math.floor((s % 3600) / 60);
+        return h ? `${h}h ${m}m played` : m ? `${m}m played` : 'First session';
+      };
+      function draw() {
+        list.innerHTML = items
+          .map(
+            (it, i) =>
+              `<li class="${i === sel ? 'sel' : ''}" data-i="${i}">${it.label}${it.note ? `<small>${it.note}</small>` : ''}</li>`,
+          )
+          .join('');
+      }
+      function toast(t) {
+        const el = document.getElementById('toast');
+        el.textContent = t;
+        el.classList.add('show');
+        clearTimeout(toast.t);
+        toast.t = setTimeout(() => el.classList.remove('show'), 1600);
+      }
+      async function choose(i) {
+        if (busy) return;
+        const it = items[i];
+        if (!it) return;
+        if (it.id === 'quit') {
+          busy = true;
+          toast('Saving and closing…');
+        }
+        window.hub.overlayAction(it.id);
+      }
+      window.hub.on('overlay:open', d => {
+        busy = false;
+        sel = 0;
+        document.getElementById('sys').textContent = d.sys;
+        document.getElementById('title').textContent = d.title;
+        document.getElementById('meta').textContent = fmt(d.playSeconds);
+        items = [{ id: 'resume', label: 'Resume' }];
+        if (d.canState)
+          items.push(
+            { id: 'save', label: 'Save state' },
+            { id: 'load', label: 'Load state' },
+            { id: 'screenshot', label: 'Screenshot' },
+          );
+        items.push({ id: 'quit', label: 'Quit to Dustoff', note: d.canState ? 'Saves for Continue' : '' });
+        draw();
+        requestAnimationFrame(() => document.body.classList.add('open'));
+      });
+      window.hub.on('overlay:nav', k => {
+        if (k === 'up') sel = (sel - 1 + items.length) % items.length;
+        else if (k === 'down') sel = (sel + 1) % items.length;
+        else if (k === 'a') return choose(sel);
+        else if (k === 'b') return window.hub.overlayAction('resume');
+        draw();
+      });
+      window.hub.on('overlay:done', msg => toast(msg));
+      list.addEventListener('mousemove', e => {
+        const li = e.target.closest('li');
+        if (li && +li.dataset.i !== sel) {
+          sel = +li.dataset.i;
+          draw();
+        }
+      });
+      list.addEventListener('click', e => {
+        const li = e.target.closest('li');
+        if (li) choose(+li.dataset.i);
+      });
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) document.body.classList.remove('open');
+      });
+    </script>
+  </body>
+</html>

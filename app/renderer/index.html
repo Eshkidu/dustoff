@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; img-src 'self' file: data:; style-src 'self' 'unsafe-inline'; font-src 'self'; script-src 'self'"
+    />
+    <title>Dustoff</title>
+    <link rel="stylesheet" href="fonts.css" />
+    <link rel="stylesheet" href="app.css" />
+    <link rel="stylesheet" href="themes.css" />
+  </head>
+  <body>
+    <div class="app">
+      <header class="top">
+        <div class="brand"><b id="appname">Dustoff</b><span id="libcount"></span></div>
+        <nav class="nav" aria-label="Screens">
+          <button class="navbtn" data-screen="home">Home</button>
+          <button class="navbtn" data-screen="lib">Library</button>
+          <button class="navbtn" data-screen="settings">Settings</button>
+          <button class="navbtn" data-screen="theme">Theme</button>
+        </nav>
+        <div class="right">
+          <span class="pill" id="padpill"><i></i><span id="padtxt">Press a button on your controller</span></span>
+          <button class="addbtn" id="addbtn">Add games</button>
+          <input type="file" id="filein" multiple hidden />
+        </div>
+      </header>
+      <main class="stage" id="stage"></main>
+      <footer class="hints" id="hints"></footer>
+    </div>
+
+    <div class="drop" id="drop" hidden>
+      <div>
+        <b>Drop to add</b
+        ><span
+          >Game files, zip files or whole folders. Each game is copied into your games folder and sorted by
+          system.</span
+        >
+      </div>
+    </div>
+
+    <div class="launch" id="launch" hidden role="dialog" aria-modal="true" aria-labelledby="l-title">
+      <div class="l-card">
+        <div id="l-art"></div>
+        <p class="l-sys" id="l-sys"></p>
+        <h2 id="l-title"></h2>
+        <div class="bar" id="l-bar"><i></i></div>
+        <p class="l-msg" id="l-msg"></p>
+      </div>
+    </div>
+
+    <div class="osk" id="osk" hidden role="dialog" aria-label="On-screen keyboard">
+      <div class="osk-panel">
+        <div class="osk-top">
+          <b id="osk-label"></b>
+          <div class="osk-field" id="osk-field"></div>
+          <span id="osk-info"></span>
+        </div>
+        <div class="osk-keys" id="osk-keys"></div>
+        <div class="osk-hints">
+          <span><span class="g a">A</span>Type</span><span><span class="g x">X</span>Delete</span
+          ><span><span class="g y">Y</span>Space</span><span><span class="g trig">LT</span>Shift</span
+          ><span><span class="g view">Menu</span>Done</span><span><span class="g b">B</span>Close</span
+          ><span>Your keyboard works here too</span>
+        </div>
+      </div>
+    </div>
+    <div class="capture" id="capture" hidden role="dialog" aria-modal="true" aria-labelledby="cap-k">
+      <div class="cap-card">
+        <p class="cap-sys" id="cap-sys"></p>
+        <p class="cap-q">Press the button for</p>
+        <h2 id="cap-k"></h2>
+        <div class="cap-time" id="cap-time"><i></i></div>
+        <p class="cap-hint">Any button, trigger or stick direction. Wait or press Esc to cancel.</p>
+      </div>
+    </div>
+    <div class="toast" id="toast" role="status"></div>
+    <script src="js/themes.js"></script>
+    <script src="js/core.js"></script>
+    <script src="js/home.js"></script>
+    <script src="js/settings.js"></script>
+    <script src="js/render.js"></script>
+    <script src="js/theme-tab.js"></script>
+    <script src="js/controls-screen.js"></script>
+    <script src="js/actions.js"></script>
+    <script src="js/input.js"></script>
+    <script src="js/boot.js"></script>
+  </body>
+</html>

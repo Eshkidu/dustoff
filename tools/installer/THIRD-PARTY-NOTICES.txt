@@ -1,0 +1,20 @@
+Dustoff includes these programs, each under its own license. They are separate
+programs that Dustoff starts; their source code is available at the links below.
+
+RetroArch          GPL-3.0     https://github.com/libretro/RetroArch
+  Mesen core       GPL-3.0     https://github.com/libretro/Mesen
+  Snes9x core      Snes9x license (non-commercial use only)  https://github.com/libretro/snes9x
+  Mupen64Plus-Next GPL-2.0     https://github.com/libretro/mupen64plus-libretro-nx
+  Gambatte core    GPL-2.0     https://github.com/libretro/gambatte-libretro
+  mGBA core        MPL-2.0     https://github.com/libretro/mgba
+Dolphin            GPL-2.0+    https://github.com/dolphin-emu/dolphin
+Cemu               MPL-2.0     https://github.com/cemu-project/Cemu
+Cemu graphic packs CC0/various https://github.com/cemu-project/cemu_graphic_packs
+Electron           MIT         https://github.com/electron/electron
+koffi              MIT         https://github.com/Koromix/koffi
+
+Full license texts are in each program's folder under "emulators" (COPYING,
+LICENSE or Licenses), and in LICENSE / LICENSES.chromium.html for Electron.
+
+Dustoff does not include any games, BIOS files, keys or firmware. You need to
+provide your own copies of games you own.
