@@ -78,7 +78,7 @@ const ask = q =>
   fs.writeFileSync(path.join(APP, 'package.json'), JSON.stringify(pkg, null, 2) + '\n');
   say('Running every check and building the public installer. This takes about 8 minutes...\n');
   const chk = spawnSync(process.execPath, [path.join(__dirname, 'check.js'), '--full'], { stdio: 'inherit' });
-  if (chk.status !== 0) die('Checks failed, so nothing was published. Ask Claude to look at dist\\last-check.json.');
+  if (chk.status !== 0) die('Checks failed, so nothing was published. Details are in dist\\last-check.json.');
   if (!fs.existsSync(INSTALLER)) die('The public installer is missing, so nothing was published.');
 
   // 3. Clean source copy: app code + build tools only. No emulators, games, saves, keys or library.
@@ -191,11 +191,11 @@ const ask = q =>
   );
 
   say(`\nPublished! ${repoUrl}/releases/tag/v${ver}`);
-  say('Share that link. To take it down later, delete the release on that page (or ask Claude).');
+  say('Share that link. To take it down later, delete the release on that page.');
 })().catch(e =>
   die(
     'Something went wrong: ' +
       e.message +
-      '\nIf it stopped before "Published!", the release may be incomplete. Ask Claude to check.',
+      '\nIf it stopped before "Published!", the release may be incomplete. Check the release page on GitHub.',
   ),
 );
