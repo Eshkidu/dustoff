@@ -91,10 +91,13 @@ api.on('game:state', d => {
     state.running = true;
     $('#l-bar').classList.add('done');
     $('#l-mascot').src = MASCOT.happy;
-    $('#l-msg').textContent =
-      'Playing. Hold View + Menu on your controller for the in-game menu. Quit from there to come back here.';
+    if (state.coopCode) drawCodeMsg(true);
+    else
+      $('#l-msg').textContent =
+        'Playing. Hold View + Menu on your controller for the in-game menu. Quit from there to come back here.';
   } else {
     state.running = false;
+    state.coopCode = null;
     const id = launchingId;
     launchingId = null;
     launchEl.hidden = true;

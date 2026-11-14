@@ -168,13 +168,55 @@
   grid-template-rows: minmax(0, 1fr) 13em;
 }
 .ch-grid {
+  position: relative;
+  min-height: 0;
+}
+.ch-pages {
+  display: flex;
+  height: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+}
+.ch-pages::-webkit-scrollbar {
+  display: none;
+}
+.ch-page {
+  flex: 0 0 100%;
+  box-sizing: border-box;
+  scroll-snap-align: start;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-rows: repeat(3, minmax(0, 1fr));
   gap: 1.5em;
   padding: 2.4em 5em 4.4em;
-  align-content: start;
+  place-items: center;
+}
+.ch-arrow {
+  position: absolute;
+  top: 42%;
+  width: 0;
+  height: 0;
+  border: 1.1em solid transparent;
+  opacity: 0.55;
+  pointer-events: none;
+}
+.ch-arrow.l {
+  left: 1.2em;
+  border-right: 1.4em solid #4fc3f0;
+  border-left: 0;
+}
+.ch-arrow.r {
+  right: 1.2em;
+  border-left: 1.4em solid #4fc3f0;
+  border-right: 0;
 }
 .ch-tile {
+  height: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   aspect-ratio: 16 / 9.4;
   border-radius: 1.5em;
   padding: 0.45em;
@@ -1604,4 +1646,8 @@ body[data-ui='dual'] .ctl-row {
     animation: none !important;
     transition: none !important;
   }
+}
+.ch-grid.at-start .ch-arrow.l,
+.ch-grid.at-end .ch-arrow.r {
+  display: none;
 }

@@ -1,0 +1,196 @@
+:root {
+  --ink: #f4f1fa;
+  --dim: #a9a3bb;
+  --panel: #14111cf0;
+  --line: #ffffff1f;
+}
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: #000;
+  color: var(--ink);
+  font-family: 'Segoe UI Variable Display', 'Segoe UI', system-ui, sans-serif;
+  overflow: hidden;
+  user-select: none;
+}
+body.hidecursor {
+  cursor: none;
+}
+video {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
+}
+.card {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(460px, calc(100vw - 48px));
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  padding: 28px 28px 24px;
+  text-align: center;
+  box-shadow: 0 30px 80px #000a;
+  transition: opacity 0.25s;
+}
+.card.gone {
+  opacity: 0;
+  pointer-events: none;
+}
+.card img {
+  width: 120px;
+  height: auto;
+  margin: -6px auto 4px;
+  display: block;
+}
+.eyebrow {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+h1 {
+  margin: 6px 0 8px;
+  font-size: 26px;
+  line-height: 1.2;
+}
+.card p {
+  margin: 0;
+  color: var(--dim);
+  font-size: 15px;
+  line-height: 1.45;
+}
+.card .btns {
+  margin-top: 18px;
+  color: var(--ink);
+  font-weight: 700;
+}
+.dots {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 16px;
+}
+.dots i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--dim);
+  animation: blink 1.2s infinite;
+}
+.dots i:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.dots i:nth-child(3) {
+  animation-delay: 0.4s;
+}
+.dots[hidden] {
+  display: none;
+}
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+.chip {
+  position: fixed;
+  left: 24px;
+  bottom: 24px;
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 10px 16px;
+  font-size: 14px;
+  transition: opacity 0.4s;
+}
+.chip.fade {
+  opacity: 0;
+}
+.chip .dim {
+  color: var(--dim);
+}
+.chip .net-good {
+  color: #6fdc8c;
+}
+.chip .net-ok {
+  color: #f2c94c;
+}
+.chip .net-slow {
+  color: #ff7a6b;
+}
+.g {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  box-sizing: border-box;
+  border-radius: 11px;
+  color: #fff;
+  font-weight: 800;
+  font-size: 11px;
+  vertical-align: middle;
+}
+.g.a {
+  background: #3fae5a;
+}
+.g.b {
+  background: #d9483b;
+}
+.g.view {
+  background: #3a3f52;
+}
+.menu {
+  position: fixed;
+  left: 6vw;
+  top: 50%;
+  transform: translateY(-50%);
+  width: min(400px, 80vw);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  padding: 26px;
+  box-shadow: 0 30px 80px #000a;
+}
+.menu ul {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.menu li {
+  padding: 14px 16px;
+  border-radius: 12px;
+  font-size: 17px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.menu li.sel {
+  background: #fff;
+  color: #0c0a12;
+}
+.menu .hints {
+  margin: 16px 0 0;
+  color: var(--dim);
+  font-size: 13px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}

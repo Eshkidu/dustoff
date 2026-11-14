@@ -139,6 +139,58 @@
       .toast.show {
         opacity: 1;
       }
+      /* Corner notice while playing with friends (friend code, someone joined or left). */
+      .notice {
+        position: fixed;
+        right: 28px;
+        top: 28px;
+        display: flex;
+        gap: 14px;
+        align-items: center;
+        max-width: 420px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 12px 18px 12px 12px;
+        box-shadow: 0 18px 50px #0009;
+        opacity: 0;
+        transform: translateY(-8px);
+        transition:
+          opacity 0.25s,
+          transform 0.25s;
+      }
+      .notice.show {
+        opacity: 1;
+        transform: none;
+      }
+      .notice img {
+        width: 54px;
+        height: auto;
+      }
+      .notice b {
+        display: block;
+        font-size: 16px;
+      }
+      .notice .code {
+        font-size: 28px;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+      }
+      .notice span {
+        color: var(--dim);
+        font-size: 13px;
+      }
+      body.open .notice {
+        opacity: 0;
+      }
+      .coopline {
+        margin: -10px 0 16px;
+        font-size: 14px;
+        color: var(--ink);
+      }
+      .coopline b {
+        letter-spacing: 0.06em;
+      }
     </style>
   </head>
   <body>
@@ -147,6 +199,7 @@
       <p class="eyebrow" id="sys"></p>
       <h1 id="title"></h1>
       <p class="meta" id="meta"></p>
+      <p class="coopline" id="coopline" hidden></p>
       <ul id="list"></ul>
       <div class="hints">
         <span><span class="g" style="background: var(--a)">A</span>Select</span
@@ -154,6 +207,10 @@
       </div>
     </div>
     <div class="toast" id="toast"></div>
+    <div class="notice" id="notice" role="status" aria-live="polite">
+      <img id="notice-img" src="../renderer/img/mascot-happy.png" alt="" />
+      <div id="notice-body"></div>
+    </div>
     <script>
       const list = document.getElementById('list');
       let items = [],
@@ -195,6 +252,16 @@
         document.getElementById('sys').textContent = d.sys;
         document.getElementById('title').textContent = d.title;
         document.getElementById('meta').textContent = fmt(d.playSeconds);
+        const cl = document.getElementById('coopline');
+        const co = d.coop || {};
+        cl.hidden = co.role !== 'host';
+        if (co.role === 'host') {
+          const n = (co.friends || []).length;
+          cl.textContent = '';
+          const b = document.createElement('b');
+          b.textContent = co.code;
+          cl.append('Friend code ', b, n ? ` · ${n} ${n === 1 ? 'friend' : 'friends'} playing` : ' · No friends yet');
+        }
         items = [{ id: 'resume', label: 'Resume' }];
         if (d.canState)
           items.push(
@@ -214,6 +281,50 @@
         draw();
       });
       window.hub.on('overlay:done', msg => toast(msg));
+      window.hub.on('overlay:close', () => document.body.classList.remove('open'));
+
+      // Notices: a sticky one (the friend code while waiting) and short ones (joined, left).
+      let sticky = null,
+        noticeTimer = null;
+      const noticeEl = document.getElementById('notice');
+      function drawNotice(n) {
+        const body = document.getElementById('notice-body');
+        document.getElementById('notice-img').src =
+          '../renderer/img/mascot-' + (n.mood || (n.code ? 'normal' : 'happy')) + '.png';
+        body.textContent = '';
+        if (n.code) {
+          const t = document.createElement('span');
+          t.textContent = 'Friend code';
+          const c = document.createElement('div');
+          c.className = 'code';
+          c.textContent = n.code;
+          const s = document.createElement('span');
+          s.textContent = n.text || '';
+          body.append(t, c, s);
+        } else {
+          const b = document.createElement('b');
+          b.textContent = n.text || '';
+          body.append(b);
+        }
+        noticeEl.classList.add('show');
+      }
+      function hideNotice() {
+        noticeEl.classList.remove('show');
+        setTimeout(() => {
+          if (!noticeEl.classList.contains('show')) window.hub.overlayNoticeGone();
+        }, 300);
+      }
+      window.hub.on('overlay:notice', n => {
+        clearTimeout(noticeTimer);
+        if (!n) {
+          sticky = null;
+          return hideNotice();
+        }
+        // A sticky notice stays until replaced; anything else means the waiting card is done.
+        sticky = n.sticky ? n : null;
+        drawNotice(n);
+        if (!n.sticky) noticeTimer = setTimeout(hideNotice, 4500);
+      });
       list.addEventListener('mousemove', e => {
         const li = e.target.closest('li');
         if (li && +li.dataset.i !== sel) {

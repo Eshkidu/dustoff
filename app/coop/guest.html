@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self'; font-src 'self'; connect-src 'self' https://0.peerjs.com wss://0.peerjs.com; media-src 'self' blob: mediastream:"
+    />
+    <title>Dustoff · Playing with a friend</title>
+    <link rel="stylesheet" href="../renderer/fonts.css" />
+    <link rel="stylesheet" href="guest.css" />
+  </head>
+  <body class="hidecursor">
+    <video id="video" autoplay playsinline></video>
+
+    <div class="card" id="card" role="status" aria-live="polite">
+      <img id="card-mascot" src="../renderer/img/mascot-sleepy.png" alt="" draggable="false" />
+      <p class="eyebrow" id="card-eyebrow">Playing with a friend</p>
+      <h1 id="card-title">Connecting…</h1>
+      <p id="card-text"></p>
+      <div class="dots" id="card-dots"><i></i><i></i><i></i></div>
+      <p class="btns" id="card-btns" hidden><span class="g a">A</span> Back to Dustoff</p>
+    </div>
+
+    <div class="chip" id="chip" hidden>
+      <b id="chip-player">Player 2</b><span id="chip-net"></span
+      ><span class="dim">Hold <span class="g view">View</span> + <span class="g view">Menu</span> for the menu</span>
+    </div>
+
+    <div class="menu" id="menu" hidden role="menu" aria-label="Menu">
+      <p class="eyebrow" id="menu-eyebrow">Playing with a friend</p>
+      <h1 id="menu-title"></h1>
+      <ul id="menu-list">
+        <li data-i="0" class="sel">Back to the game</li>
+        <li data-i="1">Leave</li>
+      </ul>
+      <p class="hints"><span class="g a">A</span> Select <span class="g b">B</span> Back to the game</p>
+    </div>
+
+    <script src="vendor/peerjs.min.js"></script>
+    <script src="common.js"></script>
+    <script src="guest.js"></script>
+  </body>
+</html>

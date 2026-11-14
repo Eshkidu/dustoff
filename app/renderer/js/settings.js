@@ -1,6 +1,26 @@
 /* Dustoff renderer: Settings screen. */
 /* ---------- Settings ---------- */
 // About card: version, link, and the mascot's four moods with where each one shows up.
+// Update status: checks GitHub on its own; installing is one button (games, saves and settings stay).
+function updateRow() {
+  const u = LIB.update || {};
+  if (!u.installed) return '<p>Updates install automatically in copies set up with the Dustoff installer.</p>';
+  if (u.busy)
+    return /* HTML */ `<p><b>Downloading the update… ${u.pct || 0}%</b> Dustoff restarts by itself when it's done.</p>`;
+  const err = u.error ? /* HTML */ `<p class="upd-err">${esc(u.error)}</p>` : '';
+  if (u.available)
+    return /* HTML */ `<div class="row">
+        <b>Dustoff ${esc(u.available.version)} is out.</b>
+        <button class="sbtn primary" data-f data-act="upd-install">Update now</button>
+      </div>
+      <p>Your games, saves and settings stay. Dustoff closes, updates and opens again in about a minute.</p>
+      ${err}`;
+  return /* HTML */ `<div class="row">
+      <span>You have the newest version.</span>
+      <button class="sbtn" data-f data-act="upd-check">Check for updates</button>
+    </div>
+    ${err}`;
+}
 function aboutCard() {
   const moods = [
     ['normal', 'Normal', 'Empty library, and searches with no results'],
@@ -14,6 +34,7 @@ function aboutCard() {
       Version ${esc(LIB.version || '')} ·
       <a href="https://github.com/Eshkidu/dustoff" target="_blank" rel="noopener">github.com/Eshkidu/dustoff</a>
     </p>
+    ${updateRow()}
     <div class="mascots">
       ${moods
         .map(

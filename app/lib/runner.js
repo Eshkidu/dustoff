@@ -94,7 +94,8 @@ function writeDolphinAchievements() {
 }
 
 /* ---------- launch ---------- */
-function launch(id, resume) {
+// opts.guests: also set up Players 2-4 for friends (see lib/coop.js).
+function launch(id, resume, opts = {}) {
   if (current) return { error: 'A game is already running.' };
   const g = store.game(id);
   if (!g) return { error: 'Game not found.' };
@@ -127,6 +128,14 @@ function launch(id, resume) {
   } catch (e) {
     log('controls not applied:', e.message);
   }
+  let guests = false;
+  if (opts.guests) {
+    try {
+      guests = controls.applyGuests(g, store.get().settings);
+    } catch (e) {
+      log('friend controls not applied:', e.message);
+    }
+  }
   if (kind === 'ra') {
     cwd = P.retroarch;
     exe = path.join(cwd, 'retroarch.exe');
@@ -155,7 +164,7 @@ function launch(id, resume) {
   if (!fs.existsSync(exe)) return { error: `Emulator not found: ${exe}` };
   log('launch', g.sys, JSON.stringify(g.title), 'resume=' + !!resume, args.join(' '));
   const proc = spawn(exe, args, { cwd, windowsHide: false });
-  current = { game: g, proc, kind, start: Date.now(), paused: false, overlayOpen: false };
+  current = { game: g, proc, kind, start: Date.now(), paused: false, overlayOpen: false, guests };
   proc.on('error', err => {
     finish();
     hooks.error && hooks.error(`Couldn't start ${SYS[g.sys].emu}: ${err.message}`);
@@ -168,11 +177,12 @@ function launch(id, resume) {
 
 function finish() {
   if (!current) return;
-  const { game: g, start } = current;
+  const { game: g, start, guests } = current;
   const secs = Math.round((Date.now() - start) / 1000);
   log('exit', JSON.stringify(g.title), secs + 's');
   current = null;
   stopPad();
+  if (guests) controls.restoreGuests();
   hooks.overlay(false);
   if (secs > 5) {
     g.playSeconds = (g.playSeconds || 0) + secs;

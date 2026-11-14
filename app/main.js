@@ -7,6 +7,9 @@ const id = require('./lib/identify');
 const runner = require('./lib/runner');
 const controls = require('./lib/controls');
 const setup = require('./lib/setup');
+const coop = require('./lib/coop');
+const gameinfo = require('./lib/gameinfo');
+const updater = require('./lib/update');
 const { P, SYS } = store;
 
 const UA = 'GameLauncherHub/0.1.0 (Windows)';
@@ -30,7 +33,14 @@ function send(ch, data) {
 const CONTROL_DEFS = controls.forRenderer();
 function snapshot() {
   const db = store.get();
-  return { games: db.games, settings: db.settings, systems: SYS, controls: CONTROL_DEFS, version: app.getVersion() };
+  return {
+    games: db.games,
+    settings: db.settings,
+    systems: SYS,
+    controls: CONTROL_DEFS,
+    version: app.getVersion(),
+    update: updState,
+  };
 }
 const changed = () => send('lib:changed', snapshot());
 
@@ -111,13 +121,50 @@ function createWindows() {
   overlay.setAlwaysOnTop(true, 'screen-saver');
   overlay.setIgnoreMouseEvents(false);
   overlay.loadFile(path.join(__dirname, 'overlay', 'overlay.html'));
+
+  coop.init({
+    send(ch, data) {
+      send(ch, data);
+      if (ch === 'coop:left-game') focusHub();
+    },
+    notice: showNotice,
+  });
 }
+function focusHub() {
+  if (!hub || hub.isDestroyed()) return;
+  hub.show();
+  if (hub.isMinimized()) hub.restore();
+  hub.setAlwaysOnTop(true);
+  hub.focus();
+  hub.setAlwaysOnTop(false);
+}
+
+/* ---------- overlay: in-game menu + small notices (friend code, friend joined) ---------- */
+let menuOpen = false,
+  noticeShown = false;
+function showNotice(n) {
+  if (!overlay || overlay.isDestroyed()) return;
+  overlay.webContents.send('overlay:notice', n);
+  if (!n) return;
+  noticeShown = true;
+  if (!menuOpen) {
+    // Clicks go through to the game while only a notice is showing.
+    overlay.setIgnoreMouseEvents(true);
+    overlay.showInactive();
+    overlay.setAlwaysOnTop(true, 'screen-saver');
+  }
+}
+ipcMain.on('overlay:notice-gone', () => {
+  noticeShown = false;
+  if (!menuOpen && overlay && !overlay.isDestroyed()) overlay.hide();
+});
 
 runner.setHooks({
   started(g) {
     send('game:state', { running: true, id: g.id });
   },
   ended(g, secs) {
+    coop.gameEnded();
     send('game:state', { running: false, id: g.id, secs });
     changed();
     if (hub && !hub.isDestroyed()) {
@@ -134,8 +181,11 @@ runner.setHooks({
   },
   overlay(open, g, kind) {
     if (!overlay || overlay.isDestroyed()) return;
+    menuOpen = !!open;
     if (open) {
+      overlay.setIgnoreMouseEvents(false);
       overlay.webContents.send('overlay:open', {
+        coop: coop.status(),
         title: g.title,
         sys: SYS[g.sys].name,
         canState: kind === 'ra' || kind === 'dolphin',
@@ -143,7 +193,11 @@ runner.setHooks({
       });
       overlay.showInactive();
       overlay.setAlwaysOnTop(true, 'screen-saver');
-    } else overlay.hide();
+    } else {
+      overlay.webContents.send('overlay:close');
+      if (noticeShown) overlay.setIgnoreMouseEvents(true);
+      else overlay.hide();
+    }
   },
   overlayNav(key) {
     if (overlay && !overlay.isDestroyed()) overlay.webContents.send('overlay:nav', key);
@@ -276,6 +330,7 @@ function addGame(info, dest, results) {
   changed();
   // Slower lookups run after the game shows up.
   (async () => {
+    await fillInfo(g);
     const art = await id.fetchArt(g);
     if (art) {
       g.art = art;
@@ -500,12 +555,66 @@ ipcMain.handle('lib:remove', (_e, gid) => {
 });
 
 /* ---------- playing ---------- */
-ipcMain.handle('game:launch', (_e, gid, resume) => runner.launch(gid, resume));
+ipcMain.handle('game:launch', (_e, gid, resume) =>
+  coop.status().role === 'guest' ? { error: "You're in a friend's game right now." } : runner.launch(gid, resume),
+);
 ipcMain.on('overlay:action', async (_e, name) => {
   if (name === 'resume') return runner.toggleOverlay(false);
   const msg = await runner.action(name);
   if (msg && overlay) overlay.webContents.send('overlay:done', msg);
 });
+
+/* ---------- updates ---------- */
+// updState: { installed, available: {version} | null, busy, pct, error }
+let updInfo = null;
+const updState = { installed: false, available: null, busy: false, pct: 0, error: '' };
+function updSend() {
+  send('update:state', updState);
+}
+async function updCheck(manual) {
+  updState.installed = updater.isInstalled();
+  updState.error = '';
+  try {
+    const info = await updater.check();
+    const isNew = info && (!updInfo || updInfo.version !== info.version);
+    updInfo = info;
+    updState.available = info ? { version: info.version } : null;
+    if (isNew && !manual) send('toast', `Dustoff ${info.version} is out. Update from Settings when you're ready.`);
+  } catch {
+    if (manual) updState.error = "Couldn't check for updates. Check your internet connection.";
+  }
+  updSend();
+  return updState;
+}
+ipcMain.handle('update:check', () => updCheck(true));
+ipcMain.handle('update:install', async () => {
+  if (!updInfo || updState.busy) return updState;
+  if (runner.isRunning() || coop.status().role)
+    return Object.assign({}, updState, { error: 'Finish your game first, then update.' });
+  updState.busy = true;
+  updState.pct = 0;
+  updSend();
+  try {
+    await updater.install(updInfo, pct => {
+      updState.pct = pct;
+      updSend();
+    });
+  } catch (e) {
+    updState.busy = false;
+    updState.error = "The update didn't download completely. Try again.";
+    updSend();
+  }
+  return updState;
+});
+
+/* ---------- playing with a friend ---------- */
+ipcMain.handle('coop:host', (_e, gid, resume) => coop.host(gid, !!resume));
+ipcMain.handle('coop:join', (_e, code) => {
+  const p = store.get().settings.profile || {};
+  return coop.join(code, p.name || '');
+});
+ipcMain.handle('coop:leave', () => coop.leave());
+ipcMain.handle('coop:status', () => coop.status());
 
 /* ---------- controls ---------- */
 // data: { mode, map } or null to go back to defaults (system) / system controls (game).
@@ -636,8 +745,24 @@ ipcMain.handle('ra:progress', async (_e, gid) => {
   }
 });
 
+// Player count and supported controllers (Wii / Wii U), from GameTDB. Refreshed monthly.
+async function fillInfo(g) {
+  if (!['wii', 'wiiu'].includes(g.sys)) return;
+  try {
+    const i = await gameinfo.lookup(g);
+    if (i === undefined) return; // offline: try again next start
+    g.players = i ? i.players : null;
+    g.ctrls = i ? i.ctrls : null;
+    g.infoAt = Date.now();
+    store.save();
+    changed();
+  } catch {}
+}
+
 // Re-check games that were added before a recognition fix, or whose art failed to download.
 async function recheck() {
+  for (const g of store.get().games)
+    if (['wii', 'wiiu'].includes(g.sys) && (!g.infoAt || Date.now() - g.infoAt > 30 * 864e5)) await fillInfo(g);
   for (const g of store.get().games) {
     if (g.customArt || (g.art && g.verified !== false)) continue;
     if (!id.ROM_SYS.includes(g.sys) && g.art) continue;
@@ -704,6 +829,8 @@ app.whenReady().then(() => {
     return;
   }
   setTimeout(recheck, 1500);
+  setTimeout(updCheck, 10000);
+  setInterval(updCheck, 6 * 3600e3);
   setTimeout(watchGames, 2500);
 });
 app.on('window-all-closed', () => app.quit());

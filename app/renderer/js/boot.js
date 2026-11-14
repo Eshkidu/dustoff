@@ -4,6 +4,10 @@ api.on('lib:changed', data => {
   LIB = data;
   render();
 });
+api.on('update:state', u => {
+  LIB.update = u;
+  if (state.screen === 'settings') render();
+});
 api.on('lib:pending', d => {
   if (d.done) {
     if (PENDING.delete(d.key)) render();
@@ -40,7 +44,7 @@ async function runSelfTest() {
   };
   for (const t of HubThemes.list) {
     LIB.settings.theme = t.id;
-    for (const scr of ['home', 'lib', 'settings', 'theme'])
+    for (const scr of ['home', 'lib', 'settings', 'theme', 'friends'])
       step(`${t.id}/${scr}`, () => {
         state.screen = scr;
         render();

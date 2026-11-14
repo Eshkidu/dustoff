@@ -3,7 +3,13 @@
 let ok = false,
   XInputGetState,
   keybd_event,
-  MapVirtualKeyW;
+  MapVirtualKeyW,
+  koffiRef,
+  EnumWindows,
+  ENUMPROC,
+  GetWindowThreadProcessId,
+  IsWindowVisible,
+  GetWindowRect;
 try {
   const koffi = require('koffi');
   const xinput = koffi.load('xinput1_4.dll');
@@ -21,6 +27,14 @@ try {
   const user32 = koffi.load('user32.dll');
   keybd_event = user32.func('void __stdcall keybd_event(uint8 bVk, uint8 bScan, uint32 dwFlags, uintptr dwExtraInfo)');
   MapVirtualKeyW = user32.func('uint32 __stdcall MapVirtualKeyW(uint32 uCode, uint32 uMapType)');
+  // Window lookup (for streaming a game window to friends). HWNDs are handled as plain numbers.
+  koffiRef = koffi;
+  ENUMPROC = koffi.proto('bool __stdcall DustoffEnumProc(intptr hwnd, intptr lParam)');
+  EnumWindows = user32.func('bool __stdcall EnumWindows(DustoffEnumProc *cb, intptr lParam)');
+  GetWindowThreadProcessId = user32.func('uint32 __stdcall GetWindowThreadProcessId(intptr hwnd, _Out_ uint32 *pid)');
+  IsWindowVisible = user32.func('bool __stdcall IsWindowVisible(intptr hwnd)');
+  const RECT = koffi.struct('DustoffRect', { left: 'int32', top: 'int32', right: 'int32', bottom: 'int32' });
+  GetWindowRect = user32.func('bool __stdcall GetWindowRect(intptr hwnd, _Out_ DustoffRect *r)');
   ok = true;
 } catch (e) {
   console.error('Native helpers unavailable:', e.message);
@@ -62,6 +76,56 @@ function readPad() {
   return null;
 }
 
+// Full state of the first connected controller (for sending to a friend who is hosting), or null.
+// { b: buttons, lt, rt: 0-255, lx, ly, rx, ry: -32768..32767 }
+function readPadFull() {
+  if (!ok) return null;
+  for (let i = 0; i < 4; i++) {
+    const s = {};
+    if (XInputGetState(i, s) === 0) {
+      const g = s.Gamepad;
+      return {
+        b: g.wButtons,
+        lt: g.bLeftTrigger,
+        rt: g.bRightTrigger,
+        lx: g.sThumbLX,
+        ly: g.sThumbLY,
+        rx: g.sThumbRX,
+        ry: g.sThumbRY,
+      };
+    }
+  }
+  return null;
+}
+
+// The biggest visible top-level window that belongs to a process, as a number (HWND), or 0.
+function mainWindowOf(pid) {
+  if (!ok || !pid) return 0;
+  let best = 0,
+    bestArea = 0;
+  const cb = koffiRef.register((hwnd, _l) => {
+    const out = [0];
+    GetWindowThreadProcessId(hwnd, out);
+    if (out[0] === pid && IsWindowVisible(hwnd)) {
+      const r = {};
+      if (GetWindowRect(hwnd, r)) {
+        const area = Math.max(0, r.right - r.left) * Math.max(0, r.bottom - r.top);
+        if (area > bestArea && area > 200 * 150) {
+          best = hwnd;
+          bestArea = area;
+        }
+      }
+    }
+    return true;
+  }, koffiRef.pointer(ENUMPROC));
+  try {
+    EnumWindows(cb, 0);
+  } finally {
+    koffiRef.unregister(cb);
+  }
+  return Number(best);
+}
+
 const wait = ms => new Promise(r => setTimeout(r, ms));
 async function tapKey(vk) {
   if (!ok) return;
@@ -71,4 +135,4 @@ async function tapKey(vk) {
   keybd_event(vk, scan, 2, 0);
 }
 
-module.exports = { ok, readPad, tapKey, BTN, VK, wait };
+module.exports = { ok, readPad, readPadFull, mainWindowOf, tapKey, BTN, VK, wait };

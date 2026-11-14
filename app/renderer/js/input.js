@@ -160,6 +160,18 @@ function drawHints() {
           [['Enter'], 'Use theme'],
           [['Esc'], 'Back'],
         ]);
+  } else if (scr === 'friends') {
+    html = pad
+      ? hintBar([
+          [['a'], 'Select'],
+          [['b'], 'Back'],
+          [['y'], 'Library'],
+        ])
+      : hintBar([
+          [['&larr;&uarr;&darr;&rarr;'], 'Move'],
+          [['Enter'], 'Select'],
+          [['Esc'], 'Back'],
+        ]);
   } else if (scr === 'controls') {
     html = pad
       ? hintBar(

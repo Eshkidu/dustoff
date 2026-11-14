@@ -18,6 +18,22 @@
   const tile = (c, g, i, cls, inner) =>
     /* HTML */ `<button class="th-tile ${cls}${c.sel(i)}" ${c.attr(g)}>${inner}</button>`;
   const clock = c => /* HTML */ `<span data-clock="t">${c.now().time}</span>`;
+  // Channels: pages of 4 x 3 tiles that always fit the screen. Down goes straight down; right from the
+  // last column slides to the next page (like the Wii menu), so the grid never scrolls up and down.
+  const chPages = (L, c) => {
+    const pages = [];
+    for (let p = 0; p === 0 || p * 12 < L.length; p++) {
+      const part = L.slice(p * 12, p * 12 + 12);
+      pages.push(
+        `<div class="ch-page">${part.map((g, i) => tile(c, g, p * 12 + i, 'ch-tile', c.art(g) + c.tags(g))).join('')}${'<div class="ch-tile ch-empty"></div>'.repeat(12 - part.length)}</div>`,
+      );
+    }
+    const arrows =
+      pages.length > 1
+        ? '<span class="ch-arrow l" aria-hidden="true"></span><span class="ch-arrow r" aria-hidden="true"></span>'
+        : '';
+    return `<div class="ch-pages">${pages.join('')}</div>${arrows}`;
+  };
 
   const THEMES = [
     {
@@ -82,9 +98,7 @@
         return wrap(
           'channels',
           /* HTML */ `<div class="ch">
-            <div class="ch-grid th-scroll">
-              ${L.map((g, i) => tile(c, g, i, 'ch-tile', c.art(g) + c.tags(g))).join('')}${'<div class="ch-tile ch-empty"></div>'.repeat(empties(L.length, 4, 12))}
-            </div>
+            <div class="ch-grid">${chPages(L, c)}</div>
             <div class="ch-bar">
               <span class="ch-btn">${ICON.home}</span>
               <div class="ch-mid">

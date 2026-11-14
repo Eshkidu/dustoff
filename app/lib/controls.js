@@ -404,9 +404,9 @@ function setIniValue(file, section, key, value) {
   }
   fs.writeFileSync(file, lines.join(/\r\n/.test(text) ? '\r\n' : '\n'));
 }
-function dolLines(sys, eff) {
+function dolLines(sys, eff, nameOf = id => INPUTS[id] && INPUTS[id].dol) {
   const out = [];
-  const expr = id => (INPUTS[id] && INPUTS[id].dol ? '`' + INPUTS[id].dol + '`' : '');
+  const expr = id => (nameOf(id) ? '`' + nameOf(id) + '`' : '');
   for (const c of controlsOf(sys, eff.mode)) {
     const v = eff.map[c.id];
     if (c.type === 'btn') {
@@ -518,6 +518,264 @@ function applyRyu(eff) {
   return 'ok';
 }
 
+/* ---------- friends (Players 2-4) ---------- */
+// While hosting, each friend's controller arrives through Dustoff's DSU server (lib/dsu.js).
+// Friends use the same button layout as Player 1. Everything changed here is saved first and put
+// back when the game ends (restoreGuests), so the user's own Player 2-4 setup is never lost.
+const DSU_DOL = {
+  a: 'Cross',
+  b: 'Circle',
+  x: 'Square',
+  y: 'Triangle',
+  lb: 'L1',
+  rb: 'R1',
+  lt: 'L2',
+  rt: 'R2',
+  back: 'Share',
+  start: 'Options',
+  ls: 'L3',
+  rs: 'R3',
+  dup: 'Pad N',
+  ddown: 'Pad S',
+  dleft: 'Pad W',
+  dright: 'Pad E',
+  lsu: 'Left Y+',
+  lsd: 'Left Y-',
+  lsl: 'Left X-',
+  lsr: 'Left X+',
+  rsu: 'Right Y+',
+  rsd: 'Right Y-',
+  rsl: 'Right X-',
+  rsr: 'Right X+',
+};
+// Cemu's DSU button codes (src/input/api/DSU/DSUController.cpp + Controller.h).
+const DSU_CEMU = {
+  back: 0,
+  ls: 1,
+  rs: 2,
+  start: 3,
+  dup: 4,
+  dright: 5,
+  ddown: 6,
+  dleft: 7,
+  lb: 10,
+  rb: 11,
+  y: 12,
+  b: 13,
+  a: 14,
+  x: 15,
+  lsr: 38,
+  lsu: 39,
+  rsr: 40,
+  rsu: 41,
+  lt: 42,
+  rt: 43,
+  lsl: 44,
+  lsd: 45,
+  rsl: 46,
+  rsd: 47,
+};
+// Wii U GamePad mapping ids (what the wiiu system uses) -> Wii U Pro Controller mapping ids.
+const PRO_IDS = { 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9, 10: 10, 27: 11 };
+const PRO_DPAD = [12, 13, 14, 15];
+const PRO_STICK_CLICK = { 15: 16, 16: 17 };
+const PRO_LS = [18, 19, 20, 21];
+const PRO_RS = [22, 23, 24, 25];
+const GUESTS = 3;
+const SUPPORTS_GUESTS = new Set(['gc', 'wii', 'wiiu']);
+const RESTORE = () => path.join(P.cache, 'coop-restore.json');
+
+function readText(file) {
+  try {
+    return fs.readFileSync(file, 'utf8');
+  } catch {
+    return null;
+  }
+}
+function getIniSection(file, section) {
+  const text = readText(file);
+  if (text == null) return null;
+  const out = [];
+  let inside = false,
+    found = false;
+  for (const line of text.split(/\r?\n/)) {
+    const m = line.match(/^\s*\[(.+)\]\s*$/);
+    if (m) {
+      inside = m[1] === section;
+      if (inside) found = true;
+      continue;
+    }
+    if (inside && line.trim()) out.push(line);
+  }
+  return found ? out : null;
+}
+function removeIniSection(file, section) {
+  const text = readText(file);
+  if (text == null) return;
+  const out = [];
+  let skip = false;
+  for (const line of text.split(/\r?\n/)) {
+    const m = line.match(/^\s*\[(.+)\]\s*$/);
+    if (m) skip = m[1] === section;
+    if (!skip) out.push(line);
+  }
+  const eol = /\r\n/.test(text) ? '\r\n' : '\n';
+  fs.writeFileSync(file, out.join(eol).replace(/(\r?\n)*$/, '') + eol);
+}
+function getIniValue(file, section, key) {
+  const lines = getIniSection(file, section);
+  if (!lines) return null;
+  for (const l of lines) if (l.split('=')[0].trim() === key) return l.slice(l.indexOf('=') + 1).trim();
+  return null;
+}
+
+function cemuProXml(wiiuEff, slot) {
+  const entries = [];
+  const add = (mapping, inputId) => {
+    const c = DSU_CEMU[inputId];
+    if (c !== undefined && mapping) entries.push([mapping, c]);
+  };
+  for (const c of controlsOf('wiiu', wiiuEff.mode)) {
+    const v = wiiuEff.map[c.id];
+    if (c.type === 'btn') add(PRO_IDS[c.to] || PRO_STICK_CLICK[c.to], v);
+    else {
+      const g = GROUPS[v] || GROUPS.none;
+      const target = c.id === 'dpad' ? PRO_DPAD : c.id === 'ls' ? PRO_LS : c.id === 'rstick' ? PRO_RS : null;
+      if (target) target.forEach((m, i) => g.dirs[i] && add(m, g.dirs[i]));
+    }
+  }
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<emulated_controller>
+	<type>Wii U Pro Controller</type>
+	<controller>
+		<api>DSUController</api>
+		<uuid>${slot}</uuid>
+		<display_name>Friend ${slot + 1}</display_name>
+		<rumble>0</rumble>
+		<axis>
+			<deadzone>0.15</deadzone>
+			<range>1</range>
+		</axis>
+		<rotation>
+			<deadzone>0.15</deadzone>
+			<range>1</range>
+		</rotation>
+		<trigger>
+			<deadzone>0.15</deadzone>
+			<range>1</range>
+		</trigger>
+		<mappings>
+${entries.map(([m, b]) => `			<entry>\n				<mapping>${m}</mapping>\n				<button>${b}</button>\n			</entry>`).join('\n')}
+		</mappings>
+		<ip>127.0.0.1</ip>
+		<port>${require('./dsu').PORT}</port>
+	</controller>
+</emulated_controller>
+`;
+}
+
+// Sets up Players 2-4 for friends. Call right before the emulator starts.
+function applyGuests(g, settings) {
+  if (!SUPPORTS_GUESTS.has(g.sys)) return false;
+  restoreGuests(); // never stack two snapshots
+  const dsu = require('./dsu');
+  const saved = (settings && settings.controls) || {};
+  const snap = { at: Date.now(), dolphin: null, cemu: null };
+  if (g.sys === 'wiiu') {
+    const dir = path.join(P.cemu, 'portable', 'controllerProfiles');
+    fs.mkdirSync(dir, { recursive: true });
+    const eff = effective('wiiu', saved.wiiu, g.controls);
+    snap.cemu = {};
+    for (let i = 0; i < GUESTS; i++) {
+      const f = path.join(dir, `controller${i + 1}.xml`);
+      snap.cemu[f] = readText(f);
+    }
+    fs.writeFileSync(RESTORE(), JSON.stringify(snap));
+    for (let i = 0; i < GUESTS; i++) fs.writeFileSync(path.join(dir, `controller${i + 1}.xml`), cemuProXml(eff, i));
+    return true;
+  }
+  const cfg = path.join(P.dolphin, 'User', 'Config');
+  fs.mkdirSync(cfg, { recursive: true });
+  const files = {
+    gc: path.join(cfg, 'GCPadNew.ini'),
+    wii: path.join(cfg, 'WiimoteNew.ini'),
+    core: path.join(cfg, 'Dolphin.ini'),
+    dsu: path.join(cfg, 'DSUClient.ini'),
+  };
+  // Friends get the controller that suits an Xbox-style pad best, if the game supports it
+  // (from the game database): GameCube controller, then Classic Controller, else the same as Player 1.
+  let eff = effective(g.sys, saved[g.sys], g.controls);
+  const gcEff = g.sys === 'gc' ? eff : effective('gc', saved.gc, null);
+  const supports = new Set(g.ctrls || []);
+  let usesPad = g.sys === 'gc' || eff.mode === 'gc';
+  if (g.sys === 'wii' && !usesPad) {
+    if (supports.has('gamecube')) usesPad = true;
+    else if (eff.mode !== 'cls' && supports.has('classiccontroller'))
+      eff = effective('wii', saved.wii, { mode: 'cls', map: (g.controls && g.controls.map) || {} });
+  }
+  snap.dolphin = { files, dsu: readText(files.dsu), gc: {}, wii: {}, si: {} };
+  for (let n = 2; n <= GUESTS + 1; n++) {
+    snap.dolphin.gc['GCPad' + n] = getIniSection(files.gc, 'GCPad' + n);
+    snap.dolphin.wii['Wiimote' + n] = getIniSection(files.wii, 'Wiimote' + n);
+    snap.dolphin.si['SIDevice' + (n - 1)] = getIniValue(files.core, 'Core', 'SIDevice' + (n - 1));
+  }
+  fs.writeFileSync(RESTORE(), JSON.stringify(snap));
+
+  fs.writeFileSync(files.dsu, `[Server]\nEnabled = True\nEntries = ${dsu.NAME}:127.0.0.1:${dsu.PORT};\n`);
+  const name = id => DSU_DOL[id];
+  for (let n = 2; n <= GUESTS + 1; n++) {
+    const device = `Device = DSUClient/${n - 2}/${dsu.NAME}`;
+    if (usesPad) {
+      setIniSection(files.gc, 'GCPad' + n, [device, ...dolLines('gc', gcEff, name)]);
+      setIniValue(files.core, 'Core', 'SIDevice' + (n - 1), '6');
+    } else {
+      const ext = { side: 'None', nun: 'Nunchuk', cls: 'Classic' }[eff.mode] || 'None';
+      setIniSection(files.wii, 'Wiimote' + n, [
+        device,
+        'Source = 1',
+        `Extension = ${ext}`,
+        `Options/Sideways Wiimote = ${eff.mode === 'side' ? 'True' : 'False'}`,
+        ...dolLines('wii', eff, name),
+      ]);
+    }
+  }
+  return true;
+}
+
+// Puts Players 2-4 back the way they were before hosting. Safe to call any time.
+function restoreGuests() {
+  let snap;
+  try {
+    snap = JSON.parse(fs.readFileSync(RESTORE(), 'utf8'));
+  } catch {
+    return;
+  }
+  try {
+    if (snap.cemu)
+      for (const [f, text] of Object.entries(snap.cemu)) {
+        if (text == null) fs.rmSync(f, { force: true });
+        else fs.writeFileSync(f, text);
+      }
+    const d = snap.dolphin;
+    if (d) {
+      if (d.dsu == null) fs.rmSync(d.files.dsu, { force: true });
+      else fs.writeFileSync(d.files.dsu, d.dsu);
+      for (const [sec, lines] of Object.entries(d.gc || {})) {
+        if (lines) setIniSection(d.files.gc, sec, lines);
+        else removeIniSection(d.files.gc, sec);
+      }
+      for (const [sec, lines] of Object.entries(d.wii || {})) {
+        if (lines) setIniSection(d.files.wii, sec, lines);
+        else removeIniSection(d.files.wii, sec);
+      }
+      for (const [key, val] of Object.entries(d.si || {}))
+        setIniValue(d.files.core, 'Core', key, val == null ? '0' : val);
+    }
+  } finally {
+    fs.rmSync(RESTORE(), { force: true });
+  }
+}
+
 // Called right before launch. Returns extra RetroArch config lines (or []).
 function apply(g, settings) {
   const saved = (settings && settings.controls) || {};
@@ -536,4 +794,15 @@ function apply(g, settings) {
   return [];
 }
 
-module.exports = { apply, effective, forRenderer, setIniValue, SYSTEMS, INPUTS };
+module.exports = {
+  apply,
+  applyGuests,
+  restoreGuests,
+  effective,
+  forRenderer,
+  setIniValue,
+  SYSTEMS,
+  INPUTS,
+  SUPPORTS_GUESTS,
+  _test: { cemuProXml, getIniSection },
+};

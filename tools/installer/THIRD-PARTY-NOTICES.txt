@@ -12,6 +12,7 @@ Cemu               MPL-2.0     https://github.com/cemu-project/Cemu
 Cemu graphic packs CC0/various https://github.com/cemu-project/cemu_graphic_packs
 Electron           MIT         https://github.com/electron/electron
 koffi              MIT         https://github.com/Koromix/koffi
+PeerJS             MIT         https://github.com/peers/peerjs  (app/coop/vendor)
 
 Full license texts are in each program's folder under "emulators" (COPYING,
 LICENSE or Licenses), and in LICENSE / LICENSES.chromium.html for Electron.

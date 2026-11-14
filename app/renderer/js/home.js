@@ -70,7 +70,11 @@ function homeSelect(g) {
     <h1>${esc(g.title)}</h1>
     <p class="sp-meta">${meta.map(m => /* HTML */ `<span>${esc(m)}</span>`).join('')}</p>
     <div class="sp-btns">
-      ${primary}<button class="sp-sec" data-f data-act="sys">
+      ${primary}${canInvite(g) ? '<button class="sp-sec" data-f data-act="friend">Play with a friend</button>' : ''}<button
+        class="sp-sec"
+        data-f
+        data-act="sys"
+      >
         ${state.sys === 'all' ? 'All systems' : esc(SYS(state.sys).name)} <span class="g bump">LB</span
         ><span class="g bump">RB</span></button
       ><button class="sp-sec" data-f data-act="library"><span class="g y">Y</span> Library</button>
@@ -167,6 +171,7 @@ function libSelect(g) {
   const rows = [
     ['Emulator', SYS(g.sys).emu],
     ['Region', g.region || 'Unknown'],
+    ...(g.players ? [['Players', playersText(g)]] : []),
     ['Play time', fmtDur(g.playSeconds) || 'None yet'],
     ['Last played', ago(g.lastPlayed)],
     ['Achievements', raLine(g) || 'None for this game'],
@@ -187,6 +192,7 @@ function libSelect(g) {
     </dl>
     <div class="lb-actions">
       ${g.resume ? '<button class="lb-play" data-f data-act="continue">Continue</button><button class="lb-small" data-f data-act="play">Start fresh</button>' : '<button class="lb-play" data-f data-act="play">Play</button>'}
+      ${canInvite(g) ? '<button class="lb-small lb-friend" data-f data-act="friend">Play with a friend</button>' : ''}
       <div class="lb-row">
         <button class="lb-small" data-f data-act="ctl-game">Controls${g.controls ? ' (custom)' : ''}</button
         ><button class="lb-small" data-f data-act="rename">Rename</button

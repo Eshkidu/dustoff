@@ -1612,3 +1612,88 @@ kbd.k {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* Friends (play with a friend) */
+.fr-join {
+  position: relative;
+}
+.fr-mascot {
+  position: absolute;
+  right: 14px;
+  top: -18px;
+  width: 92px;
+  height: auto;
+  pointer-events: none;
+}
+.fr-join p {
+  padding-right: 70px;
+}
+.fr-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 340px;
+  overflow: auto;
+  padding: 2px;
+}
+.fr-game {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  background: var(--st-inset, #0d0f14);
+  border: 1px solid var(--st-line2, #343949);
+  border-radius: 12px;
+  padding: 8px 12px 8px 8px;
+  color: inherit;
+}
+.fr-game:focus {
+  outline: 3px solid var(--focus, #8fb0ff);
+  outline-offset: 2px;
+}
+.fr-art {
+  width: 46px;
+  height: 46px;
+  border-radius: 8px;
+  overflow: hidden;
+  flex: none;
+  position: relative;
+}
+.fr-art .art {
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+}
+.fr-art .mono {
+  font-size: 13px;
+}
+.fr-t {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.fr-t b {
+  font-size: 15px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fr-t span {
+  color: var(--st-dim, #a7adbf);
+  font-size: 13px;
+}
+.l-code {
+  display: inline-block;
+  margin: 6px 0 2px;
+  font-size: 34px;
+  letter-spacing: 0.08em;
+  color: var(--ink, #fff);
+}
+.lb-friend {
+  width: 100%;
+}
+@media (max-width: 760px) {
+  .st-wrap {
+    grid-template-columns: 1fr;
+  }
+}

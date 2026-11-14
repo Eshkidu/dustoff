@@ -3,6 +3,12 @@
 function focusEl(el, instant) {
   if (!el) return;
   el.focus({ preventScroll: true });
+  // Channels theme: slide a whole page at a time (scrolling part of the way would snap back).
+  const page = el.closest && el.closest('.ch-page');
+  if (page) {
+    page.parentElement.scrollTo({ left: page.offsetLeft, behavior: instant || reduce ? 'auto' : 'smooth' });
+    return;
+  }
   el.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: instant || reduce ? 'auto' : 'smooth' });
 }
 function render() {
@@ -29,7 +35,9 @@ function render() {
           ? ctlRender()
           : state.screen === 'theme'
             ? themeRender()
-            : homeRender();
+            : state.screen === 'friends'
+              ? friendsRender()
+              : homeRender();
   for (const [cls, t, l] of keep) {
     const e = stage.querySelector('.' + cls.split(' ')[0]);
     if (e) {
@@ -112,8 +120,14 @@ stage.addEventListener('focusin', e => {
     select(byId(id));
   }
 });
+// Only a mouse that really moved picks a tile. (Browsers also send mouse events when the screen slides
+// under a resting pointer, which would steal the highlight from the controller.)
+let lastMouse = '';
 stage.addEventListener('pointermove', e => {
   if (e.pointerType !== 'mouse' || osk || !$('#launch').hidden) return;
+  const at = `${e.screenX},${e.screenY}`;
+  if (at === lastMouse) return;
+  lastMouse = at;
   const el = e.target.closest('[data-game]');
   if (el && document.activeElement !== el) {
     setMode('kb');
@@ -144,7 +158,20 @@ stage.addEventListener('click', async e => {
     return render();
   }
   const g = byId(state.sel);
-  if (act === 'play' && g) launchGame(g.id, false);
+  if (act === 'upd-check') {
+    toast('Checking for updates…', 'sleepy');
+    const u = await api.checkUpdate();
+    toast(
+      u.error || (u.available ? `Dustoff ${u.available.version} is out.` : 'You have the newest version.'),
+      u.error ? 'surprised' : 'happy',
+    );
+  } else if (act === 'upd-install') {
+    const u = await api.installUpdate();
+    if (u && u.error) toast(u.error, 'surprised');
+  } else if (act === 'coop-join') openJoin();
+  else if (act === 'coop-host') hostGame(b.dataset.gid, false);
+  else if (act === 'friend' && g) hostGame(g.id, !!g.resume);
+  else if (act === 'play' && g) launchGame(g.id, false);
   else if (act === 'continue' && g) launchGame(g.id, true);
   else if (act === 'sys') cycleSys(1);
   else if (act === 'library') go('lib');
@@ -258,3 +285,19 @@ document.querySelectorAll('.navbtn').forEach(b =>
     go(b.dataset.screen);
   }),
 );
+// Channels theme: only show the page arrows that lead somewhere.
+function chArrows() {
+  const p = stage.querySelector('.ch-pages');
+  if (!p) return;
+  const g = p.parentElement;
+  g.classList.toggle('at-start', p.scrollLeft < 10);
+  g.classList.toggle('at-end', p.scrollLeft + p.clientWidth > p.scrollWidth - 10);
+}
+stage.addEventListener(
+  'scroll',
+  e => {
+    if (e.target.classList && e.target.classList.contains('ch-pages')) chArrows();
+  },
+  true,
+);
+new MutationObserver(chArrows).observe(stage, { childList: true });
