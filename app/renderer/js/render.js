@@ -148,7 +148,11 @@ stage.addEventListener('click', async e => {
   const act = b.dataset.act;
   if (b.dataset.pending) return toast('This game is still being added. It will be ready in a moment.');
   if (!b.dataset.game && !['theme-pick', 'theme-sound', 'play', 'continue', 'remove'].includes(act))
-    sfx(act === 'fs-start' || act === 'ctl-mode' || (b.dataset.ctl && !capture) ? 'toggle' : 'select');
+    sfx(
+      act === 'fs-start' || act === 'discord' || act === 'ctl-mode' || (b.dataset.ctl && !capture)
+        ? 'toggle'
+        : 'select',
+    );
   if (b.dataset.game) {
     const g = byId(b.dataset.game);
     return launchGame(g.id, !!g.resume);
@@ -230,6 +234,13 @@ stage.addEventListener('click', async e => {
   else if (act === 'add') $('#filein').click();
   else if (act === 'fs-start') {
     await api.setSettings({ startFullscreen: !LIB.settings.startFullscreen });
+  } else if (act && act.startsWith('cl-')) {
+    const v = act.slice(3);
+    const open = clOpen === null ? (LIB.changelog[0] || {}).version : clOpen;
+    clOpen = open === v ? '' : v;
+    render();
+  } else if (act === 'discord') {
+    await api.setSettings({ discord: LIB.settings.discord === false });
   } else if (act === 'fs-now') api.toggleFullscreen();
   else if (act === 'games-folder') api.open('games');
   else if (act === 'sw-open') {

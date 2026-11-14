@@ -150,6 +150,7 @@ function openHostWindow(code, title) {
       if (!host || typeof slot !== 'number') return;
       host.friends.set(slot, String(name || 'Friend').slice(0, 20));
       hooks.notice({ text: `${host.friends.get(slot)} joined as Player ${slot + 2}`, mood: 'happy' });
+      require('./discord').friends(host.friends.size);
       changed();
     });
     win.webContents.ipc.on('coop:left', (_e, slot) => {
@@ -158,6 +159,7 @@ function openHostWindow(code, title) {
       host.friends.delete(slot);
       dsu.clearPad(slot);
       hooks.notice({ text: `${name} left (Player ${slot + 2})`, mood: 'surprised' });
+      require('./discord').friends(host.friends.size);
       changed();
     });
     win.on('closed', () => {

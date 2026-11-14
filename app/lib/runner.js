@@ -69,7 +69,11 @@ function refreshResume(g) {
 const raSafe = v => String(v || '').replace(/[^A-Za-z0-9_.-]/g, '');
 function writeRaAppend(resume, extra = []) {
   const s = store.get().settings;
-  const lines = ['savestate_auto_save = "true"', `savestate_auto_load = "${resume ? 'true' : 'false'}"`];
+  const lines = [
+    'discord_allow = "false"',
+    'savestate_auto_save = "true"',
+    `savestate_auto_load = "${resume ? 'true' : 'false'}"`,
+  ];
   if (s.ra.user && s.ra.token) {
     lines.push(
       'cheevos_enable = "true"',

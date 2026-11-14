@@ -45,6 +45,34 @@ function aboutCard() {
     </div>
   </section>`;
 }
+// What's new: one row per version, click to open it. The newest one starts open.
+let clOpen = null;
+function changelogCard() {
+  const list = LIB.changelog || [];
+  if (!list.length) return '';
+  const open = clOpen === null ? list[0].version : clOpen;
+  const fmtDate = d =>
+    new Date(d + 'T12:00:00').toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
+  return /* HTML */ `<section class="card wide">
+    <h2>What's new</h2>
+    <div class="cl-list">
+      ${list
+        .map(v => {
+          const isOpen = v.version === open;
+          const mine = v.version === LIB.version ? '<span class="cl-you">Your version</span>' : '';
+          return /* HTML */ `<div class="cl-item${isOpen ? ' open' : ''}">
+            <button class="cl-head" data-f data-act="cl-${esc(v.version)}" aria-expanded="${isOpen}">
+              <b>${esc(v.version)}</b><span class="cl-title">${esc(v.title || '')}</span>${mine}<span class="cl-date"
+                >${esc(fmtDate(v.date))}</span
+              ><span class="cl-arrow">${isOpen ? '−' : '+'}</span>
+            </button>
+            ${isOpen ? `<ul class="cl-body">${v.changes.map(c => `<li>${esc(c)}</li>`).join('')}</ul>` : ''}
+          </div>`;
+        })
+        .join('')}
+    </div>
+  </section>`;
+}
 function settingsRender() {
   const s = LIB.settings,
     ra = s.ra || {};
@@ -148,7 +176,7 @@ function settingsRender() {
   return /* HTML */ `<div class="d d-st">
     <div class="st-wrap">
       <h1>Settings</h1>
-      ${pfCard}${ctlCard}${aboutCard()}
+      ${pfCard}${ctlCard}${aboutCard()}${changelogCard()}
       <section class="card">
         <h2>Display</h2>
         <button class="toggle${s.startFullscreen ? ' on' : ''}" data-f data-act="fs-start">
@@ -156,6 +184,9 @@ function settingsRender() {
         </button>
         <button class="toggle${soundsOn() ? ' on' : ''}" data-f data-act="theme-sound">
           Menu sounds<span class="sw"></span>
+        </button>
+        <button class="toggle${s.discord !== false ? ' on' : ''}" data-f data-act="discord">
+          Show what I'm playing on Discord<span class="sw"></span>
         </button>
         <div class="row">
           <button class="sbtn" data-f data-act="fs-now">Toggle fullscreen now</button

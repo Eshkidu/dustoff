@@ -10,6 +10,7 @@ const setup = require('./lib/setup');
 const coop = require('./lib/coop');
 const gameinfo = require('./lib/gameinfo');
 const updater = require('./lib/update');
+const discord = require('./lib/discord');
 const { P, SYS } = store;
 
 const UA = 'GameLauncherHub/0.1.0 (Windows)';
@@ -31,6 +32,11 @@ function send(ch, data) {
   if (hub && !hub.isDestroyed()) hub.webContents.send(ch, data);
 }
 const CONTROL_DEFS = controls.forRenderer();
+// Plain-language list of what changed in each version (Settings > What's new).
+let CHANGELOG = [];
+try {
+  CHANGELOG = JSON.parse(fs.readFileSync(path.join(__dirname, 'changelog.json'), 'utf8'));
+} catch {}
 function snapshot() {
   const db = store.get();
   return {
@@ -40,6 +46,7 @@ function snapshot() {
     controls: CONTROL_DEFS,
     version: app.getVersion(),
     update: updState,
+    changelog: CHANGELOG,
   };
 }
 const changed = () => send('lib:changed', snapshot());
@@ -162,8 +169,10 @@ ipcMain.on('overlay:notice-gone', () => {
 runner.setHooks({
   started(g) {
     send('game:state', { running: true, id: g.id });
+    discord.playing(g);
   },
   ended(g, secs) {
+    discord.stopped();
     coop.gameEnded();
     send('game:state', { running: false, id: g.id, secs });
     changed();
@@ -644,6 +653,7 @@ ipcMain.handle('settings:set', (_e, patch) => {
   if (typeof patch.startFullscreen === 'boolean') s.startFullscreen = patch.startFullscreen;
   if (typeof patch.theme === 'string' && /^[a-z0-9-]{1,30}$/.test(patch.theme)) s.theme = patch.theme;
   if (typeof patch.themeSounds === 'boolean') s.themeSounds = patch.themeSounds;
+  if (typeof patch.discord === 'boolean') s.discord = patch.discord;
   if (patch.profile && typeof patch.profile === 'object') {
     s.profile = s.profile || {};
     if (typeof patch.profile.name === 'string') s.profile.name = patch.profile.name.trim().slice(0, 20);

@@ -11,7 +11,7 @@
   </a>
 </p>
 
-<p align="center"><sub>v0.1.2 · 329 MB · from <a href="../../releases">GitHub Releases</a> · Free and open source<br>Open the installer, wait about a minute, and Dustoff starts. If Windows says "Windows protected your PC", click <b>More info</b>, then <b>Run anyway</b>.</sub></p>
+<p align="center"><sub>v0.1.3 · 329 MB · from <a href="../../releases">GitHub Releases</a> · Free and open source<br>Open the installer, wait about a minute, and Dustoff starts. If Windows says "Windows protected your PC", click <b>More info</b>, then <b>Run anyway</b>.</sub></p>
 
 ![Dustoff home screen](screenshots/home.png)
 

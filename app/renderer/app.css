@@ -1607,6 +1607,64 @@ kbd.k {
 .card a {
   color: var(--st-accent2, #8fb0ff);
 }
+.cl-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.cl-item {
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+}
+.cl-item.open {
+  background: rgba(255, 255, 255, 0.07);
+}
+.cl-head {
+  all: unset;
+  box-sizing: border-box;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.cl-head:focus {
+  outline: 3px solid var(--focus, #8fb0ff);
+  outline-offset: 2px;
+}
+.cl-head b {
+  min-width: 48px;
+}
+.cl-title {
+  flex: 1;
+}
+.cl-you {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: var(--st-accent, #4c7dff);
+  color: #fff;
+}
+.cl-date,
+.cl-arrow {
+  color: var(--st-dim, #a7adbf);
+  font-size: 13px;
+}
+.cl-arrow {
+  width: 14px;
+  text-align: center;
+  font-size: 18px;
+}
+.cl-body {
+  margin: 0;
+  padding: 0 18px 14px 76px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  line-height: 1.45;
+}
 @media (max-width: 700px) {
   .mascots {
     grid-template-columns: repeat(2, minmax(0, 1fr));

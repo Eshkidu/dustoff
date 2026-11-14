@@ -163,7 +163,7 @@ async function loadTdb() {
 // "Legend of Zelda, The - A Link to the Past (USA) (Rev 1)" -> title + region
 function niceTitle(datName) {
   const tags = [...datName.matchAll(/\(([^)]+)\)/g)].map(m => m[1]);
-  let base = datName.replace(/\s*[\(\[][^\)\]]*[\)\]]/g, '').trim();
+  let base = datName.replace(/\s*[\(\[][^\)\]]*[\)\]n.replace(/[&*/:`<>?\|]/g, '').trim();
   base = base.replace(/^(.*?), (The|A|An)( - |$)/, '$2 $1$3').replace(/ - /g, ': ');
   return { title: base, region: tags[0] || '' };
 }
@@ -311,7 +311,7 @@ async function inspectWiiu(info) {
       t
         .toLowerCase()
         .replace(/&/g, 'and')
-        .replace(/[^a-z0-9]/g, '');
+        .replace(/[^a-z0-9n.replace(/[&*/:`<>?\|]/g, '');
     const want = norm(cleanFileName(info.file));
     const reg = /\(USA/i.test(info.file)
       ? 'E'
@@ -372,8 +372,9 @@ async function download(url, dest) {
     return false;
   }
 }
-async function fetchArt(g) {
-  const dest = path.join(P.art, g.id + '.png');
+// Every place a game's box art might be, best first. Also used for the Discord status picture.
+function artUrls(g) {
+  const urls = [];
   if (g.datName && THUMBS[g.sys]) {
     // Exact database name first, then the same game without revision tags, then common regions.
     const core = g.datName.replace(/\s*\(.*$/, '');
@@ -382,29 +383,43 @@ async function fetchArt(g) {
       names.push(`${core} ${r}`);
     for (const n of [...new Set(names)]) {
       const name = n.replace(/[&*/:`<>?\\|]/g, '_');
-      if (
-        await download(
-          `https://raw.githubusercontent.com/libretro-thumbnails/${THUMBS[g.sys]}/master/Named_Boxarts/${encodeURIComponent(name)}.png`,
-          dest,
-        )
-      )
-        return dest;
+      urls.push(
+        `https://raw.githubusercontent.com/libretro-thumbnails/${THUMBS[g.sys]}/master/Named_Boxarts/${encodeURIComponent(name)}.png`,
+      );
     }
   }
   if (g.wiiuId) {
     const r = { E: 'US', P: 'EN', J: 'JA' }[g.wiiuId[3]] || 'US';
-    for (const region of [...new Set([r, 'US', 'EN'])]) {
-      for (const kind of ['coverHQ', 'coverM', 'cover']) {
-        if (await download(`https://art.gametdb.com/wiiu/${kind}/${region}/${g.wiiuId}.jpg`, dest)) return dest;
-      }
-    }
+    for (const region of [...new Set([r, 'US', 'EN'])])
+      for (const kind of ['coverHQ', 'coverM', 'cover'])
+        urls.push(`https://art.gametdb.com/wiiu/${kind}/${region}/${g.wiiuId}.jpg`);
   }
   if (g.discId) {
     const r = { E: 'US', P: 'EN', J: 'JA', D: 'DE', F: 'FR', K: 'KO' }[g.discId[3]] || 'US';
-    for (const region of [...new Set([r, 'US', 'EN'])]) {
-      for (const kind of ['coverHQ', 'coverM', 'cover']) {
-        if (await download(`https://art.gametdb.com/wii/${kind}/${region}/${g.discId}.png`, dest)) return dest;
-      }
+    for (const region of [...new Set([r, 'US', 'EN'])])
+      for (const kind of ['coverHQ', 'coverM', 'cover'])
+        urls.push(`https://art.gametdb.com/wii/${kind}/${region}/${g.discId}.png`);
+  }
+  return urls;
+}
+async function fetchArt(g) {
+  const dest = path.join(P.art, g.id + '.png');
+  for (const url of artUrls(g)) {
+    if (await download(url, dest)) {
+      g.artUrl = url;
+      return dest;
+    }
+  }
+  return null;
+}
+// Finds the web address of a game's box art without downloading it (for games added before artUrl existed).
+async function findArtUrl(g) {
+  for (const url of artUrls(g)) {
+    try {
+      const r = await fetch(url, { method: 'HEAD', headers: { 'User-Agent': UA } });
+      if (r.ok) return url;
+    } catch {
+      return null;
     }
   }
   return null;
@@ -476,4 +491,16 @@ async function inspect(file) {
   return info;
 }
 
-module.exports = { inspect, fetchArt, raGameId, extract, walk, extOf, EXT, ARCHIVES, ROM_SYS, cleanFileName };
+module.exports = {
+  inspect,
+  fetchArt,
+  findArtUrl,
+  raGameId,
+  extract,
+  walk,
+  extOf,
+  EXT,
+  ARCHIVES,
+  ROM_SYS,
+  cleanFileName,
+};

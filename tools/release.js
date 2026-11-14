@@ -20,7 +20,9 @@ const die = m => {
 };
 // Output shown live in the window (stdio: 'inherit') comes back as null, so default to ''.
 const run = (cmd, args, opts = {}) =>
-  String(execFileSync(cmd, args, Object.assign({ encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }, opts)) ?? '').trim();
+  String(
+    execFileSync(cmd, args, Object.assign({ encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }, opts)) ?? '',
+  ).trim();
 const tryRun = (cmd, args, opts) => {
   try {
     return run(cmd, args, opts);
@@ -69,6 +71,11 @@ const ask = q =>
     const [a, b, c] = ver.split('.').map(Number);
     ver = `${a}.${b}.${c + 1}`;
   }
+  // Every release needs a plain-language "What's new" entry (shown in Settings and on GitHub). Checked before the long tests.
+  const log = JSON.parse(fs.readFileSync(path.join(APP, 'changelog.json'), 'utf8'));
+  const entry = log.find(e => e.version === ver);
+  if (!entry)
+    die(`app\\changelog.json has no entry for ${ver} yet. Add what changed (in plain words) and run this again.`);
   say(`GitHub account: ${me.login}`);
   say(`Version:        ${ver}`);
   say(`Where:          ${repoUrl}${repoExists ? '' : '  (new, public)'}\n`);
@@ -102,7 +109,13 @@ const ask = q =>
   // Fill the version and installer size shown under the download button.
   const readme = path.join(REPO, 'README.md');
   const mb = Math.round(fs.statSync(INSTALLER).size / 1048576) + ' MB';
-  fs.writeFileSync(readme, fs.readFileSync(readme, 'utf8').replace(/\{\{VERSION\}\}/g, ver).replace(/\{\{SIZE\}\}/g, mb));
+  fs.writeFileSync(
+    readme,
+    fs
+      .readFileSync(readme, 'utf8')
+      .replace(/\{\{VERSION\}\}/g, ver)
+      .replace(/\{\{SIZE\}\}/g, mb),
+  );
   for (const f of ['.prettierrc.json', '.prettierignore']) fs.copyFileSync(path.join(ROOT, f), path.join(REPO, f));
   fs.writeFileSync(path.join(REPO, '.gitignore'), 'node_modules/\ndist/\ndata/\ngames/\nemulators/\n*.bak*\n');
   // Same personal-info guard as the installer build.
@@ -120,11 +133,22 @@ const ask = q =>
     }
   })(REPO);
 
-  // 4. Notes
+  // 4. Notes: "What's new" comes from app/changelog.json (the same list shown in Settings).
+  const bullets = e => e.changes.map(c => '- ' + c).join('\n');
+  // CHANGELOG.md at the top of the repo, newest first.
+  fs.writeFileSync(
+    path.join(REPO, 'CHANGELOG.md'),
+    "# What's new in Dustoff\n" + log.map(e => `\n## ${e.version}: ${e.title} (${e.date})\n\n${bullets(e)}\n`).join(''),
+  );
   const notes = path.join(DIST, 'release-notes.md');
   fs.writeFileSync(
     notes,
-    `## Dustoff ${ver}
+    `## Dustoff ${ver}: ${entry.title}
+
+### What's new
+${bullets(entry)}
+
+### Install
 
 **Download:** DustoffSetup-Public.exe below. Double-click, wait about a minute, and Dustoff opens.
 

@@ -75,6 +75,7 @@ function cemuSettings() {
       : x.replace('<content>', `<content>\n    <${tag}>${val}</${tag}>`);
   };
   setTag('check_update', 'false');
+  setTag('use_discord_presence', 'false'); // Dustoff shows the game on Discord itself
   setTag('gp_download', 'true');
   setTag('vk_warning', 'true');
   if (!x.includes(`<Entry>${games}</Entry>`)) {
@@ -137,6 +138,7 @@ function dolphinSettings() {
     ['Interface', 'PauseOnFocusLost', 'False'],
     ['AutoUpdate', 'UpdateTrack', ''],
     ['Display', 'Fullscreen', 'True'],
+    ['General', 'UseDiscordPresence', 'False'], // Dustoff shows the game on Discord itself
   ];
   let text = '';
   try {
@@ -244,6 +246,7 @@ function ryubingSettings() {
   cfg.update_checker_type = 'Off';
   cfg.show_confirm_exit = false;
   cfg.start_fullscreen = true;
+  cfg.enable_discord_integration = false; // Dustoff shows the game on Discord itself
   cfg.input_config = cfg.input_config || [];
   if (!cfg.input_config.some(p => p.player_index === 'Player1'))
     cfg.input_config.push(JSON.parse(JSON.stringify(RYU_PAD)));
