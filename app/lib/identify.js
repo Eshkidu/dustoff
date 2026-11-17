@@ -412,6 +412,18 @@ async function fetchArt(g) {
   }
   return null;
 }
+// Disc label scans from GameTDB for GameCube, Wii and Wii U games (shown on the Shelf theme's discs).
+async function fetchDiscArt(g) {
+  const gid = g.sys === 'wiiu' ? g.wiiuId : g.discId;
+  if (!gid) return null;
+  const plat = g.sys === 'wiiu' ? 'wiiu' : 'wii';
+  const r = { E: 'US', P: 'EN', J: 'JA', D: 'DE', F: 'FR', K: 'KO' }[gid[3]] || 'US';
+  const dest = path.join(P.art, g.id + '-disc.png');
+  for (const region of [...new Set([r, 'US', 'EN'])])
+    for (const kind of ['disc', 'disccustom'])
+      if (await download(`https://art.gametdb.com/${plat}/${kind}/${region}/${gid}.png`, dest)) return dest;
+  return null;
+}
 // Finds the web address of a game's box art without downloading it (for games added before artUrl existed).
 async function findArtUrl(g) {
   for (const url of artUrls(g)) {
@@ -494,6 +506,7 @@ async function inspect(file) {
 module.exports = {
   inspect,
   fetchArt,
+  fetchDiscArt,
   findArtUrl,
   raGameId,
   extract,

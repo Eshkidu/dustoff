@@ -1,5 +1,15 @@
 # What's new in Dustoff
 
+## 0.1.4: Your games on a shelf (2026-11-16)
+
+- New default look: every system gets its own wooden shelf, and your games stand on it spine-out like a real collection.
+- Pick a game and its case turns out to show the cover. Press A or click it and the case comes off the shelf and opens.
+- Discs spin up before the game starts. Cartridges and Switch cards slide into a slot and the power light comes on.
+- GameCube, Wii and Wii U discs show the real disc label when it can be found online.
+- Continue, Start fresh and Play with a friend are on the open case.
+- New sounds for the shelf: cardboard, plastic cases and clicks instead of beeps.
+- The old Spotlight home screen is gone. The other themes are still in the Theme tab.
+
 ## 0.1.3: Discord shows what you're playing (2026-11-13)
 
 - Your Discord status now says the name of the game you're playing, like "Playing New Super Mario Bros. U", with its box art and how long you've been playing.

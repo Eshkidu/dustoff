@@ -1,5 +1,19 @@
 [
   {
+    "version": "0.1.4",
+    "date": "2026-11-16",
+    "title": "Your games on a shelf",
+    "changes": [
+      "New default look: every system gets its own wooden shelf, and your games stand on it spine-out like a real collection.",
+      "Pick a game and its case turns out to show the cover. Press A or click it and the case comes off the shelf and opens.",
+      "Discs spin up before the game starts. Cartridges and Switch cards slide into a slot and the power light comes on.",
+      "GameCube, Wii and Wii U discs show the real disc label when it can be found online.",
+      "Continue, Start fresh and Play with a friend are on the open case.",
+      "New sounds for the shelf: cardboard, plastic cases and clicks instead of beeps.",
+      "The old Spotlight home screen is gone. The other themes are still in the Theme tab."
+    ]
+  },
+  {
     "version": "0.1.3",
     "date": "2026-11-13",
     "title": "Discord shows what you're playing",

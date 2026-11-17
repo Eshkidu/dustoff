@@ -2,7 +2,8 @@
 /* ---------- navigation ---------- */
 function move(dx, dy) {
   userInput();
-  const root = osk ? oskKeys : stage;
+  if (SHV.busy) return;
+  const root = osk ? oskKeys : SHV.open ? shvBtns : stage;
   const items = [...root.querySelectorAll('[data-f]')].filter(e => e.offsetParent !== null);
   const cur = document.activeElement;
   if (!root.contains(cur) || !cur.matches('[data-f]')) {
@@ -44,6 +45,8 @@ function jump(n) {
   focusEl(items[Math.max(0, Math.min(items.length - 1, i + n))]);
 }
 function back() {
+  if (SHV.open) return shelfClose();
+  if (SHV.busy) return;
   if (state.screen === 'controls') {
     sfx('back');
     ctlClose();
@@ -58,7 +61,8 @@ function activate() {
     openInputOsk(el);
     return;
   }
-  if (el && stage.contains(el) && el.matches('[data-f]')) el.click();
+  if (SHV.busy) return;
+  if (el && (stage.contains(el) || (SHV.open && shvBtns.contains(el))) && el.matches('[data-f]')) el.click();
   else move(0, 0);
 }
 

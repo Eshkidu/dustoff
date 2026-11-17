@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld('hub', {
   clearProfilePic: () => ipcRenderer.invoke('profile:clear'),
   setArtFile: (id, file) => ipcRenderer.invoke('art:file', id, file),
   resetArt: id => ipcRenderer.invoke('art:reset', id),
+  discArt: id => ipcRenderer.invoke('art:disc', id),
   pathForFile: file => webUtils.getPathForFile(file),
   update: (id, patch) => ipcRenderer.invoke('lib:update', id, patch),
   remove: id => ipcRenderer.invoke('lib:remove', id),

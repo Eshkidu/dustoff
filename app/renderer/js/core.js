@@ -44,7 +44,7 @@ const mono = t =>
     .toUpperCase();
 const byId = id => LIB.games.find(g => g.id === id);
 const SYS = s => LIB.systems[s] || { name: s, full: s, emu: '' };
-const curTheme = () => HubThemes.get(LIB.settings.theme || 'hub');
+const curTheme = () => HubThemes.get(LIB.settings.theme || 'shelf');
 // Interface sounds (on unless turned off). Moves only sound when the user just pressed something,
 // so focus changes from screen redraws stay quiet.
 const soundsOn = () => LIB.settings.themeSounds !== false;
@@ -52,8 +52,8 @@ let lastInput = 0;
 const userInput = () => {
   lastInput = performance.now();
 };
-function sfx(kind, theme) {
-  if (soundsOn()) HubThemes.sfx(theme || curTheme(), kind);
+function sfx(kind, theme, opt) {
+  if (soundsOn()) HubThemes.sfx(theme || curTheme(), kind, opt);
 }
 const clockNow = () => {
   const d = new Date();
@@ -67,6 +67,7 @@ function thCtx(preview) {
   return {
     preview,
     art,
+    artSrc: g => (g.art && !g.pending ? fileUrl(g.art) : ''),
     esc,
     hue,
     now: clockNow,
@@ -211,6 +212,7 @@ document.addEventListener(
   'error',
   e => {
     const t = e.target;
+    if (t.classList && t.classList.contains('sh-sbg')) return t.remove();
     if (t.tagName === 'IMG' && t.parentElement && t.parentElement.classList.contains('art')) {
       const a = t.parentElement;
       a.classList.remove('img');

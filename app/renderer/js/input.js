@@ -146,7 +146,20 @@ function drawHints() {
   const yLabel = scr === 'lib' ? 'Home' : 'Library';
   const UPDOWN = '&uarr;&darr;';
   let html;
-  if (scr === 'theme') {
+  if (typeof SHV !== 'undefined' && shelfIsOpen()) {
+    html = SHV.busy
+      ? ''
+      : pad
+        ? hintBar([
+            [['a'], 'Select'],
+            [['b'], 'Back to shelf'],
+          ])
+        : hintBar([
+            [['&larr;&rarr;'], 'Move'],
+            [['Enter'], 'Select'],
+            [['Esc'], 'Back to shelf'],
+          ]);
+  } else if (scr === 'theme') {
     html = pad
       ? hintBar(
           [
@@ -228,6 +241,11 @@ addEventListener('keydown', e => {
     return;
   }
   const k = e.key;
+  if (SHV.busy) {
+    e.preventDefault();
+    return;
+  }
+  if (SHV.open && !/^(Arrow(Left|Right|Up|Down)|Enter|Escape| )$/.test(k)) return;
   if (capture) {
     e.preventDefault();
     if (k === 'Escape') endCapture(null);
@@ -312,6 +330,12 @@ function padPress(k) {
   setMode('pad');
   userInput();
   if (!launchEl.hidden) return;
+  if (SHV.busy) return;
+  if (SHV.open) {
+    if (k === 'a') activate();
+    else if (k === 'b') back();
+    return;
+  }
   if (osk) {
     if (k === 'a') {
       const el = document.activeElement;

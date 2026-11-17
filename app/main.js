@@ -521,6 +521,27 @@ ipcMain.handle('art:file', (_e, gid, file) => {
   const g = store.game(gid);
   return g ? setCustomArt(g, file) : null;
 });
+// Disc art for the Shelf theme. Downloaded once per game; a miss is retried after a week.
+const discBusy = new Map();
+ipcMain.handle('art:disc', async (_e, gid) => {
+  const g = store.game(gid);
+  if (!g || !['gc', 'wii', 'wiiu'].includes(g.sys)) return null;
+  if (g.discArt && fs.existsSync(g.discArt)) return g.discArt;
+  if (g.discArt === false && Date.now() - (g.discAt || 0) < 7 * 864e5) return null;
+  if (!discBusy.has(gid))
+    discBusy.set(
+      gid,
+      id
+        .fetchDiscArt(g)
+        .catch(() => null)
+        .finally(() => discBusy.delete(gid)),
+    );
+  const file = await discBusy.get(gid);
+  g.discArt = file || false;
+  g.discAt = Date.now();
+  store.save();
+  return file;
+});
 ipcMain.handle('art:reset', async (_e, gid) => {
   const g = store.game(gid);
   if (!g) return;
@@ -557,6 +578,7 @@ ipcMain.handle('lib:remove', (_e, gid) => {
   if (i < 0) return;
   const [g] = db.games.splice(i, 1);
   if (g.art) fsp.rm(g.art, { force: true }).catch(() => {});
+  if (g.discArt) fsp.rm(g.discArt, { force: true }).catch(() => {});
   if (g.file && !db.ignored.includes(g.file.toLowerCase())) db.ignored.push(g.file.toLowerCase());
   store.save();
   changed();

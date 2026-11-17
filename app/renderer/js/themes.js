@@ -12,6 +12,164 @@
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M14 4l6 6-8 8H6v-6z"/><path d="M11 7l6 6"/></svg>',
     plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
   };
+  // Shelf theme: box sizes per system in prototype pixels (w = cover width, h = height, d = spine
+  // thickness). Cardboard boxes for the cartridge systems, plastic cases for disc and card systems.
+  const SH_BOX = {
+    nes: { w: 120, h: 168, d: 34, k: 'cb' },
+    gb: { w: 104, h: 108, d: 26, k: 'cb' },
+    gbc: { w: 104, h: 108, d: 26, k: 'cb' },
+    snes: { w: 172, h: 124, d: 40, k: 'cb' },
+    n64: { w: 172, h: 124, d: 40, k: 'cb' },
+    gba: { w: 104, h: 108, d: 26, k: 'cb' },
+    gc: { w: 124, h: 166, d: 24, k: 'case' },
+    wii: { w: 118, h: 166, d: 21, k: 'case' },
+    wiiu: { w: 118, h: 148, d: 21, k: 'case' },
+    switch: { w: 100, h: 160, d: 17, k: 'case' },
+  };
+  const SH_SHORT = {
+    nes: 'NES',
+    gb: 'GB',
+    gbc: 'GBC',
+    snes: 'SNES',
+    n64: 'N64',
+    gba: 'GBA',
+    gc: 'GC',
+    wii: 'Wii',
+    wiiu: 'Wii U',
+    switch: 'Switch',
+  };
+  function shSpine(g, c, i) {
+    const B = SH_BOX[g.sys] || SH_BOX.wii,
+      src = c.artSrc(g);
+    return /* HTML */ `<button
+      class="th-tile sh-box k-${B.k} sb-${SH_BOX[g.sys] ? g.sys : 'new'}${c.sel(i)}"
+      ${c.attr(g)}
+      style="--w:${B.w};--h:${B.h};--d:${B.d};--hue:${c.hue(g)}"
+      aria-label="${c.esc(g.title)}"
+    >
+      <span class="sh-cube"
+        ><span class="sh-spine"
+          >${src ? `<img class="sh-sbg" src="${src}" alt="" draggable="false" />` : ''}<span class="sh-band"
+            >${SH_SHORT[g.sys] || 'New'}</span
+          ><span class="sh-t">${c.esc(g.title)}</span><i class="sh-dot"></i></span
+        ><span class="sh-face">${c.art(g)}${c.tags(g)}</span></span
+      >
+    </button>`;
+  }
+  // Shelf sounds: built from filtered noise and soft tones so they feel like cardboard, plastic
+  // cases and console clicks rather than beeps. opt.dur sets how long the disc spin-up lasts.
+  let shNoise = null;
+  function shelfSound(kind, ac, opt = {}) {
+    if (!shNoise || shNoise.sampleRate !== ac.sampleRate) {
+      shNoise = ac.createBuffer(1, ac.sampleRate * 2, ac.sampleRate);
+      const d = shNoise.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    }
+    const T = ac.currentTime + 0.005,
+      vary = () => 0.92 + Math.random() * 0.16;
+    const hit = (at, dur, freq, gain, type = 'bandpass', q = 1, sweep) => {
+      const s = ac.createBufferSource(),
+        f = ac.createBiquadFilter(),
+        g = ac.createGain(),
+        t = T + at;
+      s.buffer = shNoise;
+      f.type = type;
+      f.Q.value = q;
+      f.frequency.setValueAtTime(freq, t);
+      if (sweep) f.frequency.exponentialRampToValueAtTime(sweep, t + dur);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(gain, t + Math.min(0.006, dur / 4));
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      s.connect(f).connect(g).connect(ac.destination);
+      s.start(t, Math.random() * 0.4, dur + 0.05);
+    };
+    const tone = (at, freq, dur, gain, type = 'sine', to) => {
+      const o = ac.createOscillator(),
+        g = ac.createGain(),
+        t = T + at;
+      o.type = type;
+      o.frequency.setValueAtTime(freq, t);
+      if (to) o.frequency.exponentialRampToValueAtTime(to, t + dur);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(gain, t + 0.006);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g).connect(ac.destination);
+      o.start(t);
+      o.stop(t + dur + 0.05);
+    };
+    const clack = (at, v = 1) => {
+      hit(at, 0.035, 3000 * vary(), 0.32 * v, 'bandpass', 1.4);
+      hit(at + 0.05, 0.045, 1700 * vary(), 0.24 * v, 'bandpass', 1.2);
+      tone(at, 230 * vary(), 0.06, 0.05 * v, 'triangle');
+    };
+    switch (kind) {
+      case 'move': // a case sliding a little way out of the shelf
+        hit(0, 0.07, 900 * vary(), 0.11, 'bandpass', 0.7, 2200);
+        tone(0, 150 * vary(), 0.06, 0.05);
+        break;
+      case 'select':
+        clack(0, 0.8);
+        break;
+      case 'toggle':
+        hit(0, 0.025, 4200, 0.2, 'bandpass', 2);
+        tone(0, 1250, 0.035, 0.025);
+        break;
+      case 'back':
+      case 'close':
+        clack(0, 0.9);
+        hit(0.04, 0.09, 420, 0.25, 'lowpass', 0.7);
+        tone(0.04, 120, 0.1, 0.12, 'sine', 80);
+        break;
+      case 'open': // pulled off the shelf, then the lid snaps open
+        hit(0, 0.32, 600, 0.12, 'lowpass', 0.8, 2400);
+        clack(0.62, 1);
+        break;
+      case 'spin': {
+        // disc drive spinning up: a rising motor hum plus air hiss
+        const dur = opt.dur || 2,
+          o = ac.createOscillator(),
+          f = ac.createBiquadFilter(),
+          g = ac.createGain();
+        o.type = 'sawtooth';
+        o.frequency.setValueAtTime(45, T);
+        o.frequency.exponentialRampToValueAtTime(330, T + dur);
+        f.type = 'lowpass';
+        f.frequency.setValueAtTime(260, T);
+        f.frequency.exponentialRampToValueAtTime(1500, T + dur);
+        g.gain.setValueAtTime(0.0001, T);
+        g.gain.exponentialRampToValueAtTime(0.045, T + 0.35);
+        g.gain.setValueAtTime(0.045, T + dur - 0.1);
+        g.gain.exponentialRampToValueAtTime(0.0001, T + dur + 0.35);
+        o.connect(f).connect(g).connect(ac.destination);
+        o.start(T);
+        o.stop(T + dur + 0.4);
+        hit(0, Math.min(dur + 0.3, 0.95), 500, 0.05, 'bandpass', 0.6, 4000);
+        tone(0, 1800, 0.05, 0.02); // laser seek ticks
+        tone(dur * 0.45, 2100, 0.04, 0.02);
+        break;
+      }
+      case 'insert': // cartridge or card seating into the slot
+        hit(0, 0.1, 520, 0.4, 'lowpass', 0.8);
+        tone(0, 88, 0.18, 0.3, 'sine', 60);
+        hit(0.09, 0.025, 2600, 0.18, 'bandpass', 2);
+        break;
+      case 'power':
+      case 'start':
+        hit(0, 0.02, 3500, 0.16, 'bandpass', 2);
+        tone(0.04, 523.25, 0.16, 0.06);
+        tone(0.13, 783.99, 0.34, 0.06);
+        tone(0.13, 1567.98, 0.25, 0.012);
+        break;
+      case 'error':
+        hit(0, 0.08, 300, 0.3, 'lowpass');
+        hit(0.13, 0.1, 260, 0.3, 'lowpass');
+        tone(0, 110, 0.1, 0.05, 'triangle');
+        tone(0.13, 98, 0.14, 0.05, 'triangle');
+        break;
+      default:
+        tone(0, 520, 0.05, 0.05);
+    }
+  }
   const BLK = ['#e4202e', '#f5c400', '#1aa84a', '#2156d6'];
   const empties = (n, cols, min) => Math.max(min, Math.ceil(n / cols) * cols) - n;
   const wrap = (id, inner) => /* HTML */ `<div class="d th th-${id}"><div class="th-box">${inner}</div></div>`;
@@ -37,46 +195,64 @@
 
   const THEMES = [
     {
-      id: 'hub',
-      name: 'Dustoff',
+      id: 'shelf',
+      name: 'Shelf',
       era: 'Default',
-      sw: ['#0c0a12', '#2a2240', '#ffffff', '#8fb0ff'],
-      desc: 'The hub as it was built: one big game in the spotlight with your recent games underneath.',
+      sw: ['#1c3231', '#7a4a2a', '#e0ab4a', '#f2e9d8'],
+      desc: 'Every system gets its own wooden shelf with your games standing spine-out. Pick one and its case slides out and opens, then the disc spins up or the cartridge clicks into the console.',
       chips: [
-        ['Layout', 'Spotlight + strip'],
-        ['Font', 'Manrope + Unbounded'],
-        ['Sound', 'Soft tick'],
+        ['Layout', 'A shelf per system'],
+        ['Font', 'Manrope'],
+        ['Motion', 'Cases open, discs spin'],
+        ['Sound', 'Cardboard, plastic, clicks'],
       ],
-      sfx: ['sine', 660, 0.05],
-      // Home uses the built-in Spotlight screen; this markup is only for the Theme tab preview.
+      sfx: ['sine', 520, 0.05],
+      sound: shelfSound,
       home(L, c) {
-        const g = L[0];
-        return wrap(
-          'hub',
-          /* HTML */ `<div class="hub" style="--h:${c.hue(g)}">
-            <div class="hub-glow"></div>
-            <div class="hub-hero">
-              <div>
-                <p class="hub-eb">${c.esc(c.sysName(g))}</p>
-                <h1>${c.esc(g.title)}</h1>
-                <p class="hub-meta">${c.esc(c.meta(g))}</p>
-                <div class="hub-btns">
-                  <span class="hub-play">A&nbsp; Play</span><span class="hub-sec">Y&nbsp; Library</span>
-                </div>
+        const groups = new Map();
+        for (const g of L) {
+          const k = g.pending && !SH_BOX[g.sys] ? 'new' : g.sys;
+          if (!groups.has(k)) groups.set(k, []);
+          groups.get(k).push(g);
+        }
+        const order = ['new', 'nes', 'gb', 'gbc', 'snes', 'n64', 'gba', 'gc', 'wii', 'wiiu', 'switch'];
+        const keys = [...groups.keys()].sort((a, b) => order.indexOf(a) - order.indexOf(b));
+        let i = 0,
+          first = null;
+        const shelves = keys
+          .map(k => {
+            const games = groups
+              .get(k)
+              .slice()
+              .sort((a, b) => (a.pending ? -1 : b.pending ? 1 : a.title.localeCompare(b.title)));
+            first = first || games[0];
+            // Room the cubby needs so a picked case can turn out without the shelf changing size.
+            const bs = games.map(g => SH_BOX[g.sys] || SH_BOX.wii),
+              need = bs.reduce((n, b) => n + b.d + 3, 0) + Math.max(...bs.map(b => b.w - b.d)) + 24 + 16 + 36;
+            const name = k === 'new' ? 'Being added' : c.sysName(games[0]);
+            return /* HTML */ `<section class="sh-shelf" style="--need:${need}">
+              <div class="sh-head">
+                <span class="sh-plaque"
+                  >${c.esc(name)}<small>${games.length} game${games.length === 1 ? '' : 's'}</small></span
+                >
               </div>
-              <div class="hub-art">${c.art(g)}</div>
-            </div>
-            <p class="hub-label">Recently played</p>
-            <div class="hub-strip">
-              ${L.slice(0, 9)
-                .map((x, i) => /* HTML */ `<div class="hub-tile${i === 0 ? ' sel' : ''}">${c.art(x)}</div>`)
-                .join('')}
-            </div>
+              <div class="sh-row th-scroll">
+                ${games.map(g => shSpine(g, c, i++)).join('')}<span class="sh-end" aria-hidden="true"></span>
+              </div>
+              <div class="sh-plank" aria-hidden="true"></div>
+            </section>`;
+          })
+          .join('');
+        return wrap(
+          'shelf',
+          /* HTML */ `<div class="sh">
+            <div class="sh-top" id="thdetail">${this.detail(first, c)}</div>
+            <div class="sh-shelves th-scroll">${shelves}</div>
           </div>`,
         );
       },
-      detail() {
-        return '';
+      detail(g, c) {
+        return g ? `<b>${c.esc(g.title)}</b><small>${c.esc(c.meta(g))}</small>` : '';
       },
     },
 
@@ -461,7 +637,7 @@
   };
   let actx = null,
     lastMove = 0;
-  function sfx(theme, kind = 'move') {
+  function sfx(theme, kind = 'move', opt) {
     try {
       const now = performance.now();
       if (kind === 'move') {
@@ -470,6 +646,7 @@
       }
       actx = actx || new AudioContext();
       if (actx.state === 'suspended') actx.resume();
+      if (theme.sound) return theme.sound(kind, actx, opt);
       const [type, f, d, f2] = theme.sfx,
         peak = type === 'square' || type === 'sawtooth' ? 0.035 : 0.09;
       for (const [mul, delay, len] of KINDS[kind] || KINDS.move) {
@@ -491,5 +668,11 @@
   }
   const beep = (theme, big) => sfx(theme, big ? 'start' : 'move');
 
-  window.HubThemes = { list: THEMES, get: id => THEMES.find(t => t.id === id) || THEMES[0], sfx, beep };
+  window.HubThemes = {
+    list: THEMES,
+    get: id => THEMES.find(t => t.id === id) || THEMES[0],
+    sfx,
+    beep,
+    shelfBox: s => SH_BOX[s] || SH_BOX.wii,
+  };
 })();

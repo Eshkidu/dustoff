@@ -1,5 +1,5 @@
-/* Dustoff renderer: Home (Spotlight) and Library screens. */
-/* ---------- Spotlight ---------- */
+/* Dustoff renderer: Home (drawn by the current theme) and Library screens. */
+/* ---------- Home ---------- */
 function homeRender() {
   if (!LIB.games.length && !PENDING.size) {
     return /* HTML */ `<div class="d empty">
@@ -21,71 +21,11 @@ function homeRender() {
     </div>`;
   }
   const L = [...pendingGames(), ...sorted(list())];
-  const th = curTheme();
-  if (th.id !== 'hub') return th.home(L, thCtx(false));
-  const anyPlayed = LIB.games.some(g => g.lastPlayed);
-  return /* HTML */ `<div class="d d-sp">
-    <div class="sp-bg"></div>
-    <section class="sp-hero">
-      <div id="sptext"></div>
-      <div class="sp-art" id="spart"></div>
-    </section>
-    <p class="sp-label">
-      ${anyPlayed ? 'Recently played' : 'Your games'}${state.sys !== 'all' ? ' · ' + esc(SYS(state.sys).name) : ''}
-    </p>
-    <div class="sp-strip">
-      ${L.map(g => (g.pending ? /* HTML */ `<button class="sp-tile" data-f data-pending="${g.pending.key}" aria-label="${esc(g.title)}, being added">${art(g)}</button>` : /* HTML */ `<button class="sp-tile" data-f data-game="${g.id}" aria-label="${esc(g.title)}">${art(g)}${tags(g)}</button>`)).join('')}
-    </div>
-  </div>`;
+  return curTheme().home(L, thCtx(false));
 }
 function homeSelect(g) {
-  const th = curTheme();
-  if (th.id !== 'hub') {
-    const el = $('#thdetail');
-    if (el && g) el.innerHTML = th.detail(g, thCtx(false));
-    return;
-  }
-  const d = $('.d-sp');
-  if (!d || !g) return;
-  d.style.setProperty('--h', hue(g));
-  const meta = [
-    g.playSeconds ? `${fmtDur(g.playSeconds)} played` : 'Not played yet',
-    g.lastPlayed ? `Last played ${ago(g.lastPlayed).toLowerCase()}` : '',
-    raLine(g),
-  ].filter(Boolean);
-  const primary = g.resume
-    ? /* HTML */ `<button class="sp-play" data-f data-act="continue"><span class="g a">A</span> Continue</button
-        ><button class="sp-sec" data-f data-act="play">Start fresh</button>`
-    : /* HTML */ `<button class="sp-play" data-f data-act="play"><span class="g a">A</span> Play</button>`;
-  const resume = g.resume
-    ? /* HTML */ `<div class="sp-resume">
-        ${g.resume.thumb ? /* HTML */ `<img src="${fileUrl(g.resume.thumb)}?t=${Math.round(g.resume.at)}" alt="" />` : ''}<span
-          >Continue picks up exactly where you quit, ${ago(g.resume.at).toLowerCase()}.</span
-        >
-      </div>`
-    : '';
-  $('#sptext').innerHTML = /* HTML */ `<p class="sp-eyebrow">
-      ${esc(SYS(g.sys).full)}${g.region ? /* HTML */ ` <span class="badge">${esc(g.region)}</span>` : ''}${verifiedBadge(g)}
-    </p>
-    <h1>${esc(g.title)}</h1>
-    <p class="sp-meta">${meta.map(m => /* HTML */ `<span>${esc(m)}</span>`).join('')}</p>
-    <div class="sp-btns">
-      ${primary}${canInvite(g) ? '<button class="sp-sec" data-f data-act="friend">Play with a friend</button>' : ''}<button
-        class="sp-sec"
-        data-f
-        data-act="sys"
-      >
-        ${state.sys === 'all' ? 'All systems' : esc(SYS(state.sys).name)} <span class="g bump">LB</span
-        ><span class="g bump">RB</span></button
-      ><button class="sp-sec" data-f data-act="library"><span class="g y">Y</span> Library</button>
-    </div>
-    ${resume}`;
-  $('#spart').innerHTML = art(g);
-  for (const el of [$('#sptext'), $('#spart')]) {
-    el.classList.remove('swap');
-    void el.offsetWidth;
-    el.classList.add('swap');
-  }
+  const el = $('#thdetail');
+  if (el && g) el.innerHTML = curTheme().detail(g, thCtx(false));
 }
 
 /* ---------- Library ---------- */

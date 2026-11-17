@@ -10,17 +10,22 @@ function focusEl(el, instant) {
     return;
   }
   el.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: instant || reduce ? 'auto' : 'smooth' });
+  // Shelf theme: a picked case widens as it turns, so check again once it has finished turning.
+  if (el.classList.contains('sh-box'))
+    setTimeout(() => {
+      if (document.activeElement === el) el.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
+    }, 480);
 }
 function render() {
   const active = document.activeElement;
-  if (osk || (active && active.matches('input') && stage.contains(active))) {
+  if (osk || shelfIsOpen() || (active && active.matches('input') && stage.contains(active))) {
     state.pendingRender = true;
     return;
   }
   state.pendingRender = false;
   const prevAct = active && stage.contains(active) && active.dataset ? active.dataset.act : null;
   if (state.sys !== 'all' && !present().includes(state.sys)) state.sys = 'all';
-  const keep = [...stage.querySelectorAll('.lb-main, .sp-strip, .lb-side')].map(e => [
+  const keep = [...stage.querySelectorAll('.lb-main, .sh-shelves, .lb-side')].map(e => [
     e.className,
     e.scrollTop,
     e.scrollLeft,
@@ -124,12 +129,13 @@ stage.addEventListener('focusin', e => {
 // under a resting pointer, which would steal the highlight from the controller.)
 let lastMouse = '';
 stage.addEventListener('pointermove', e => {
-  if (e.pointerType !== 'mouse' || osk || !$('#launch').hidden) return;
+  if (e.pointerType !== 'mouse' || osk || shelfIsOpen() || !$('#launch').hidden) return;
   const at = `${e.screenX},${e.screenY}`;
   if (at === lastMouse) return;
   lastMouse = at;
   const el = e.target.closest('[data-game]');
-  if (el && document.activeElement !== el) {
+  // Shelf cases only turn out when picked, so hovering doesn't shuffle the shelf under the pointer.
+  if (el && !el.classList.contains('sh-box') && document.activeElement !== el) {
     setMode('kb');
     userInput();
     el.focus({ preventScroll: true });
@@ -154,6 +160,7 @@ stage.addEventListener('click', async e => {
         : 'select',
     );
   if (b.dataset.game) {
+    if (b.classList.contains('sh-box')) return shelfOpen(b);
     const g = byId(b.dataset.game);
     return launchGame(g.id, !!g.resume);
   }

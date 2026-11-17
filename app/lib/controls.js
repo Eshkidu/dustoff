@@ -231,6 +231,7 @@ const SYSTEMS = {
       G('dpad', 'D-pad', ['dpad', 'left', 'right'], 'dpad', [11, 12, 13, 14]),
       B('home', 'Home', 'none', 27),
       B('screen', 'Swap screens', 'none', 26),
+      B('mic', 'Blow into mic', 'none', 25),
     ]),
   },
 
