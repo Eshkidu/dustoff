@@ -28,6 +28,8 @@
 
 <sub>Screenshots show a sample library with made-up games.</sub>
 
+<p align="center"><a href="https://discord.gg/5tKueNqWXp"><b>Join the Dustoff Discord</b></a> for help, bug reports, ideas and finding someone to play with.</p>
+
 ## What it does
 
 - **Drag and drop.** Drop game files, zips or a whole folder onto the window. Each game is recognized, sorted by system and gets its cover art.
@@ -49,6 +51,10 @@
 ## Install
 
 [Download the installer](https://github.com/Eshkidu/dustoff/releases/latest/download/DustoffSetup-Public.exe) (or pick a version from [Releases](../../releases)), double-click it and wait about a minute. Windows may say "Windows protected your PC": click **More info**, then **Run anyway**.
+
+## Help and community
+
+Questions, bugs or ideas? Come say hi on the [Dustoff Discord](https://discord.gg/5tKueNqWXp), or [open an issue](../../issues).
 
 ## Your games
 
