@@ -98,7 +98,7 @@ api.on('game:state', d => {
     if (state.coopCode) drawCodeMsg(true);
     else
       $('#l-msg').textContent =
-        'Playing. Hold View + Menu on your controller for the in-game menu. Quit from there to come back here.';
+        `Playing. Hold ${padName('View')} + ${padName('Menu')} on your controller for the in-game menu. Quit from there to come back here.`;
   } else {
     state.running = false;
     state.coopCode = null;

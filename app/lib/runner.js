@@ -127,8 +127,14 @@ function launch(id, resume, opts = {}) {
     args,
     cwd,
     raBinds = [];
+  // Xbox controller: everything works exactly as before. Any other controller (PlayStation,
+  // Switch Pro...): RetroArch uses its SDL driver, and Dolphin/Cemu get it through Dustoff's DSU feed.
+  native.refreshPads();
+  const pad = native.padSource();
+  const p1Feed = !!(pad && pad.kind === 'sdl' && (kind === 'dolphin' || kind === 'cemu'));
+  if (pad && pad.kind === 'sdl') log('controller', pad.type, JSON.stringify(pad.name));
   try {
-    raBinds = controls.apply(g, store.get().settings);
+    raBinds = controls.apply(g, store.get().settings, pad);
   } catch (e) {
     log('controls not applied:', e.message);
   }
@@ -167,8 +173,13 @@ function launch(id, resume, opts = {}) {
   }
   if (!fs.existsSync(exe)) return { error: `Emulator not found: ${exe}` };
   log('launch', g.sys, JSON.stringify(g.title), 'resume=' + !!resume, args.join(' '));
-  const proc = spawn(exe, args, { cwd, windowsHide: false });
-  current = { game: g, proc, kind, start: Date.now(), paused: false, overlayOpen: false, guests };
+  const env = pad && pad.kind === 'sdl' ? { ...process.env, SDL_GAMECONTROLLER_USE_BUTTON_LABELS: '0' } : undefined;
+  if (p1Feed)
+    require('./dsu')
+      .start('p1')
+      .catch(e => log('controller feed failed:', e.message));
+  const proc = spawn(exe, args, { cwd, windowsHide: false, env });
+  current = { game: g, proc, kind, start: Date.now(), paused: false, overlayOpen: false, guests, p1Feed };
   proc.on('error', err => {
     finish();
     hooks.error && hooks.error(`Couldn't start ${SYS[g.sys].emu}: ${err.message}`);
@@ -181,11 +192,15 @@ function launch(id, resume, opts = {}) {
 
 function finish() {
   if (!current) return;
-  const { game: g, start, guests } = current;
+  const { game: g, start, guests, p1Feed } = current;
   const secs = Math.round((Date.now() - start) / 1000);
   log('exit', JSON.stringify(g.title), secs + 's');
   current = null;
   stopPad();
+  if (p1Feed) {
+    log('controller feed', require('./dsu').statsText());
+    require('./dsu').stop('p1');
+  }
   if (guests) controls.restoreGuests();
   hooks.overlay(false);
   if (secs > 5) {
@@ -257,36 +272,47 @@ let padTimer = null,
   repeatAt = 0;
 function watchPad() {
   stopPad();
-  padTimer = setInterval(() => {
-    if (!current) return;
-    const p = native.readPad();
-    const b = p ? p.buttons : 0;
-    const B = native.BTN;
-    const combo = b & B.BACK && b & B.START;
-    if (combo) {
-      if (!comboSince) comboSince = Date.now();
-      else if (comboSince > 0 && Date.now() - comboSince > 700) {
-        comboSince = -1;
-        toggleOverlay();
+  const feed = current && current.p1Feed ? require('./dsu') : null;
+  padTimer = setInterval(
+    () => {
+      if (!current) return;
+      const full = native.readPadFull();
+      if (feed) feed.setPad(feed.P1_SLOT, full || { b: 0, lt: 0, rt: 0, lx: 0, ly: 0, rx: 0, ry: 0 });
+      const B = native.BTN;
+      let b = full ? full.b : 0;
+      if (full) {
+        if (full.ly > 16000) b |= B.UP;
+        if (full.ly < -16000) b |= B.DOWN;
+        if (full.lx < -16000) b |= B.LEFT;
+        if (full.lx > 16000) b |= B.RIGHT;
       }
-    } else comboSince = 0;
-    if (current && current.overlayOpen && !combo) {
-      const pressed = b & ~prev;
-      const now = Date.now();
-      const dir = b & (B.UP | B.DOWN);
-      if (pressed & B.UP || (dir & B.UP && now > repeatAt)) {
-        hooks.overlayNav('up');
-        repeatAt = now + (pressed & B.UP ? 380 : 120);
+      const combo = b & B.BACK && b & B.START;
+      if (combo) {
+        if (!comboSince) comboSince = Date.now();
+        else if (comboSince > 0 && Date.now() - comboSince > 700) {
+          comboSince = -1;
+          toggleOverlay();
+        }
+      } else comboSince = 0;
+      if (current && current.overlayOpen && !combo) {
+        const pressed = b & ~prev;
+        const now = Date.now();
+        const dir = b & (B.UP | B.DOWN);
+        if (pressed & B.UP || (dir & B.UP && now > repeatAt)) {
+          hooks.overlayNav('up');
+          repeatAt = now + (pressed & B.UP ? 380 : 120);
+        }
+        if (pressed & B.DOWN || (dir & B.DOWN && now > repeatAt)) {
+          hooks.overlayNav('down');
+          repeatAt = now + (pressed & B.DOWN ? 380 : 120);
+        }
+        if (pressed & B.A) hooks.overlayNav('a');
+        if (pressed & B.B) hooks.overlayNav('b');
       }
-      if (pressed & B.DOWN || (dir & B.DOWN && now > repeatAt)) {
-        hooks.overlayNav('down');
-        repeatAt = now + (pressed & B.DOWN ? 380 : 120);
-      }
-      if (pressed & B.A) hooks.overlayNav('a');
-      if (pressed & B.B) hooks.overlayNav('b');
-    }
-    prev = b;
-  }, 16);
+      prev = b;
+    },
+    feed ? 4 : 16,
+  ); // faster while passing a controller to the emulator, so it feels the same as a direct one
 }
 function stopPad() {
   clearInterval(padTimer);

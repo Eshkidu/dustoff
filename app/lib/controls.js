@@ -5,32 +5,33 @@ const path = require('path');
 const { P, ryuData } = require('./store');
 
 /* ---------- Xbox inputs ---------- */
-// ra = RetroArch xinput bind, dol = Dolphin expression, cemu = Cemu XInput code, ryu = Ryubing gamepad name.
+// ra = RetroArch xinput bind, sdl = RetroArch sdl2 bind (non-Xbox controllers, by button position),
+// dol = Dolphin expression, cemu = Cemu XInput code, ryu = Ryubing gamepad name.
 const INPUTS = {
-  a: { label: 'A', ra: { btn: '0' }, dol: 'Button A', cemu: 12, ryu: 'A' },
-  b: { label: 'B', ra: { btn: '1' }, dol: 'Button B', cemu: 13, ryu: 'B' },
-  x: { label: 'X', ra: { btn: '2' }, dol: 'Button X', cemu: 14, ryu: 'X' },
-  y: { label: 'Y', ra: { btn: '3' }, dol: 'Button Y', cemu: 15, ryu: 'Y' },
-  lb: { label: 'LB', ra: { btn: '4' }, dol: 'Shoulder L', cemu: 8, ryu: 'LeftShoulder' },
-  rb: { label: 'RB', ra: { btn: '5' }, dol: 'Shoulder R', cemu: 9, ryu: 'RightShoulder' },
-  lt: { label: 'LT', ra: { axis: '+4' }, dol: 'Trigger L', cemu: 42, ryu: 'LeftTrigger' },
-  rt: { label: 'RT', ra: { axis: '+5' }, dol: 'Trigger R', cemu: 43, ryu: 'RightTrigger' },
-  back: { label: 'View', ra: { btn: '7' }, dol: 'Back', cemu: 5, ryu: 'Back' },
-  start: { label: 'Menu', ra: { btn: '6' }, dol: 'Start', cemu: 4, ryu: 'Start' },
-  ls: { label: 'Left stick click', ra: { btn: '8' }, dol: 'Thumb L', cemu: 6, ryu: 'LeftStick' },
-  rs: { label: 'Right stick click', ra: { btn: '9' }, dol: 'Thumb R', cemu: 7, ryu: 'RightStick' },
-  dup: { label: 'D-pad up', ra: { btn: 'h0up' }, dol: 'Pad N', cemu: 0, ryu: 'DpadUp' },
-  ddown: { label: 'D-pad down', ra: { btn: 'h0down' }, dol: 'Pad S', cemu: 1, ryu: 'DpadDown' },
-  dleft: { label: 'D-pad left', ra: { btn: 'h0left' }, dol: 'Pad W', cemu: 2, ryu: 'DpadLeft' },
-  dright: { label: 'D-pad right', ra: { btn: 'h0right' }, dol: 'Pad E', cemu: 3, ryu: 'DpadRight' },
-  lsu: { label: 'Left stick up', ra: { axis: '+1' }, dol: 'Left Y+', cemu: 39 },
-  lsd: { label: 'Left stick down', ra: { axis: '-1' }, dol: 'Left Y-', cemu: 45 },
-  lsl: { label: 'Left stick left', ra: { axis: '-0' }, dol: 'Left X-', cemu: 44 },
-  lsr: { label: 'Left stick right', ra: { axis: '+0' }, dol: 'Left X+', cemu: 38 },
-  rsu: { label: 'Right stick up', ra: { axis: '+3' }, dol: 'Right Y+', cemu: 41 },
-  rsd: { label: 'Right stick down', ra: { axis: '-3' }, dol: 'Right Y-', cemu: 47 },
-  rsl: { label: 'Right stick left', ra: { axis: '-2' }, dol: 'Right X-', cemu: 46 },
-  rsr: { label: 'Right stick right', ra: { axis: '+2' }, dol: 'Right X+', cemu: 40 },
+  a: { label: 'A', ra: { btn: '0' }, sdl: { btn: '0' }, dol: 'Button A', cemu: 12, ryu: 'A' },
+  b: { label: 'B', ra: { btn: '1' }, sdl: { btn: '1' }, dol: 'Button B', cemu: 13, ryu: 'B' },
+  x: { label: 'X', ra: { btn: '2' }, sdl: { btn: '2' }, dol: 'Button X', cemu: 14, ryu: 'X' },
+  y: { label: 'Y', ra: { btn: '3' }, sdl: { btn: '3' }, dol: 'Button Y', cemu: 15, ryu: 'Y' },
+  lb: { label: 'LB', ra: { btn: '4' }, sdl: { btn: '9' }, dol: 'Shoulder L', cemu: 8, ryu: 'LeftShoulder' },
+  rb: { label: 'RB', ra: { btn: '5' }, sdl: { btn: '10' }, dol: 'Shoulder R', cemu: 9, ryu: 'RightShoulder' },
+  lt: { label: 'LT', ra: { axis: '+4' }, sdl: { axis: '+4' }, dol: 'Trigger L', cemu: 42, ryu: 'LeftTrigger' },
+  rt: { label: 'RT', ra: { axis: '+5' }, sdl: { axis: '+5' }, dol: 'Trigger R', cemu: 43, ryu: 'RightTrigger' },
+  back: { label: 'View', ra: { btn: '7' }, sdl: { btn: '4' }, dol: 'Back', cemu: 5, ryu: 'Back' },
+  start: { label: 'Menu', ra: { btn: '6' }, sdl: { btn: '6' }, dol: 'Start', cemu: 4, ryu: 'Start' },
+  ls: { label: 'Left stick click', ra: { btn: '8' }, sdl: { btn: '7' }, dol: 'Thumb L', cemu: 6, ryu: 'LeftStick' },
+  rs: { label: 'Right stick click', ra: { btn: '9' }, sdl: { btn: '8' }, dol: 'Thumb R', cemu: 7, ryu: 'RightStick' },
+  dup: { label: 'D-pad up', ra: { btn: 'h0up' }, sdl: { btn: '11' }, dol: 'Pad N', cemu: 0, ryu: 'DpadUp' },
+  ddown: { label: 'D-pad down', ra: { btn: 'h0down' }, sdl: { btn: '12' }, dol: 'Pad S', cemu: 1, ryu: 'DpadDown' },
+  dleft: { label: 'D-pad left', ra: { btn: 'h0left' }, sdl: { btn: '13' }, dol: 'Pad W', cemu: 2, ryu: 'DpadLeft' },
+  dright: { label: 'D-pad right', ra: { btn: 'h0right' }, sdl: { btn: '14' }, dol: 'Pad E', cemu: 3, ryu: 'DpadRight' },
+  lsu: { label: 'Left stick up', ra: { axis: '+1' }, sdl: { axis: '-1' }, dol: 'Left Y+', cemu: 39 },
+  lsd: { label: 'Left stick down', ra: { axis: '-1' }, sdl: { axis: '+1' }, dol: 'Left Y-', cemu: 45 },
+  lsl: { label: 'Left stick left', ra: { axis: '-0' }, sdl: { axis: '-0' }, dol: 'Left X-', cemu: 44 },
+  lsr: { label: 'Left stick right', ra: { axis: '+0' }, sdl: { axis: '+0' }, dol: 'Left X+', cemu: 38 },
+  rsu: { label: 'Right stick up', ra: { axis: '+3' }, sdl: { axis: '-3' }, dol: 'Right Y+', cemu: 41 },
+  rsd: { label: 'Right stick down', ra: { axis: '-3' }, sdl: { axis: '+3' }, dol: 'Right Y-', cemu: 47 },
+  rsl: { label: 'Right stick left', ra: { axis: '-2' }, sdl: { axis: '-2' }, dol: 'Right X-', cemu: 46 },
+  rsr: { label: 'Right stick right', ra: { axis: '+2' }, sdl: { axis: '+2' }, dol: 'Right X+', cemu: 40 },
   none: { label: 'Not set' },
 };
 // Whole-stick choices for analog sticks and D-pads. Order: up, down, left, right.
@@ -322,11 +323,12 @@ const RA_ALL = [
   'r_y_plus',
   'r_y_minus',
 ];
-function raLines(sys, eff) {
+function raLines(sys, eff, src) {
+  const useSdl = !!(src && src.kind === 'sdl');
   const binds = {};
   for (const n of RA_ALL) binds[n] = { btn: 'nul', axis: 'nul' };
   const put = (name, inputId) => {
-    const r = INPUTS[inputId] && INPUTS[inputId].ra;
+    const r = INPUTS[inputId] && INPUTS[inputId][useSdl ? 'sdl' : 'ra'];
     if (!r) return;
     if (r.btn) binds[name].btn = r.btn;
     if (r.axis) binds[name].axis = r.axis;
@@ -344,10 +346,13 @@ function raLines(sys, eff) {
   }
   const lines = [
     'input_autodetect_enable = "false"',
-    'input_player1_joypad_index = "0"',
+    `input_player1_joypad_index = "${useSdl ? src.index || 0 : 0}"`,
     'input_player1_analog_dpad_mode = "0"',
-    'input_menu_toggle_btn = "10"',
+    `input_menu_toggle_btn = "${useSdl ? 5 : 10}"`,
   ];
+  // PlayStation, Switch Pro and other non-Xbox controllers: RetroArch's SDL driver (the emulator is
+  // started with SDL_GAMECONTROLLER_USE_BUTTON_LABELS=0, so buttons go by position like Xbox ones).
+  if (useSdl) lines.unshift('input_joypad_driver = "sdl2"');
   for (const [n, b] of Object.entries(binds))
     lines.push(`input_player1_${n}_btn = "${b.btn}"`, `input_player1_${n}_axis = "${b.axis}"`);
   return lines;
@@ -422,35 +427,47 @@ function dolLines(sys, eff, nameOf = id => INPUTS[id] && INPUTS[id].dol) {
   }
   return out;
 }
-function applyDolphin(g, eff, gcEff) {
+// Player 1 on an Xbox controller: Dolphin reads it through XInput. Any other controller:
+// Dustoff reads it and passes it to Dolphin through its DSU server (slot 3), see lib/dsu.js.
+function applyDolphin(g, eff, gcEff, src) {
   const cfg = path.join(P.dolphin, 'User', 'Config');
   fs.mkdirSync(cfg, { recursive: true });
   const usesPad = g.sys === 'gc' || eff.mode === 'gc';
-  setIniSection(path.join(cfg, 'GCPadNew.ini'), 'GCPad1', [
-    'Device = XInput/0/Gamepad',
-    ...dolLines('gc', gcEff),
-    'Rumble/Motor = `Motor L` | `Motor R`',
-  ]);
+  const dsu = src && src.kind === 'sdl' ? require('./dsu') : null;
+  const device = dsu ? `Device = DSUClient/${dsu.P1_SLOT}/${dsu.NAME}` : 'Device = XInput/0/Gamepad';
+  const nameOf = dsu ? id => DSU_DOL[id] : undefined;
+  const rumble = dsu ? [] : ['Rumble/Motor = `Motor L` | `Motor R`'];
+  if (dsu)
+    fs.writeFileSync(
+      path.join(cfg, 'DSUClient.ini'),
+      `[Server]
+Enabled = True
+Entries = ${dsu.NAME}:127.0.0.1:${dsu.PORT};
+`,
+    );
+  setIniSection(path.join(cfg, 'GCPadNew.ini'), 'GCPad1', [device, ...dolLines('gc', gcEff, nameOf), ...rumble]);
   setIniValue(path.join(cfg, 'Dolphin.ini'), 'Core', 'SIDevice0', usesPad ? '6' : '0');
   if (g.sys === 'wii') {
     const ext = { side: 'None', nun: 'Nunchuk', cls: 'Classic', gc: 'None' }[eff.mode];
     const lines = [
-      'Device = XInput/0/Gamepad',
+      device,
       'Source = 1',
       `Extension = ${ext}`,
       `Options/Sideways Wiimote = ${eff.mode === 'side' ? 'True' : 'False'}`,
     ];
-    if (eff.mode !== 'gc') lines.push(...dolLines('wii', eff));
-    lines.push('Rumble/Motor = `Motor L` | `Motor R`');
+    if (eff.mode !== 'gc') lines.push(...dolLines('wii', eff, nameOf));
+    lines.push(...rumble);
     setIniSection(path.join(cfg, 'WiimoteNew.ini'), 'Wiimote1', lines);
   }
 }
 
-// Cemu: controllerProfiles/controller0.xml as a Wii U GamePad on the first Xbox controller.
-function applyCemu(eff) {
+// Cemu: controllerProfiles/controller0.xml as a Wii U GamePad on the first Xbox controller,
+// or on Dustoff's DSU feed (slot 3) for any other controller.
+function applyCemu(eff, src) {
+  const dsu = src && src.kind === 'sdl' ? require('./dsu') : null;
   const entries = [];
   const add = (mapping, inputId) => {
-    const c = INPUTS[inputId] && INPUTS[inputId].cemu;
+    const c = dsu ? DSU_CEMU[inputId] : INPUTS[inputId] && INPUTS[inputId].cemu;
     if (c !== undefined) entries.push([mapping, c]);
   };
   for (const c of controlsOf('wiiu', eff.mode)) {
@@ -465,10 +482,10 @@ function applyCemu(eff) {
 <emulated_controller>
 	<type>Wii U GamePad</type>
 	<controller>
-		<api>XInput</api>
-		<uuid>0</uuid>
+		<api>${dsu ? 'DSUController' : 'XInput'}</api>
+		<uuid>${dsu ? dsu.P1_SLOT : 0}</uuid>
 		<display_name>Controller 1</display_name>
-		<rumble>0.5</rumble>
+		<rumble>${dsu ? 0 : 0.5}</rumble>
 		<axis>
 			<deadzone>0.15</deadzone>
 			<range>1</range>
@@ -483,7 +500,13 @@ function applyCemu(eff) {
 		</trigger>
 		<mappings>
 ${entries.map(([m, b]) => `			<entry>\n				<mapping>${m}</mapping>\n				<button>${b}</button>\n			</entry>`).join('\n')}
-		</mappings>
+		</mappings>${
+      dsu
+        ? `
+		<ip>127.0.0.1</ip>
+		<port>${dsu.PORT}</port>`
+        : ''
+    }
 	</controller>
 </emulated_controller>
 `;
@@ -778,16 +801,17 @@ function restoreGuests() {
 }
 
 // Called right before launch. Returns extra RetroArch config lines (or []).
-function apply(g, settings) {
+// src = native.padSource(): which kind of controller Player 1 has (null/xinput = Xbox, as before).
+function apply(g, settings, src) {
   const saved = (settings && settings.controls) || {};
   const eff = effective(g.sys, saved[g.sys], g.controls);
   if (!eff) return [];
   const emu = SYSTEMS[g.sys].emu;
-  if (emu === 'ra') return raLines(g.sys, eff);
+  if (emu === 'ra') return raLines(g.sys, eff, src);
   if (emu === 'dolphin') {
     const gcEff = g.sys === 'gc' ? eff : effective('gc', saved.gc, null);
-    applyDolphin(g, eff, gcEff);
-  } else if (emu === 'cemu') applyCemu(eff);
+    applyDolphin(g, eff, gcEff, src);
+  } else if (emu === 'cemu') applyCemu(eff, src);
   else if (emu === 'ryu') {
     const r = applyRyu(eff);
     if (r !== 'ok') throw new Error('Switch controls not applied: ' + r);
@@ -805,5 +829,5 @@ module.exports = {
   SYSTEMS,
   INPUTS,
   SUPPORTS_GUESTS,
-  _test: { cemuProXml, getIniSection },
+  _test: { cemuProXml, getIniSection, raLines },
 };

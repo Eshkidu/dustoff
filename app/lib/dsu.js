@@ -2,14 +2,17 @@
 // protocol, so a friend's controller can show up in the game as Player 2, 3 or 4 without any
 // driver. Only listens on this PC (127.0.0.1).
 //
-// Each slot is one friend. Slots are always reported as connected while hosting, so the
+// Slots 0-2 are friends. Slots are always reported as connected while hosting, so the
 // emulators keep stable device names (DSUClient/0/Dustoff, /1, /2) and a friend who joins
-// mid-game works right away.
+// mid-game works right away. Slot 3 is Player 1's own controller when it isn't an Xbox
+// controller (PlayStation, Switch Pro...): Dustoff reads it and passes it on here, so Dolphin
+// and Cemu see it under a name Dustoff controls (DSUClient/3/Dustoff).
 const dgram = require('dgram');
 
 const PORT = 26770; // not the usual 26760, so it never clashes with DS4Windows or BetterJoy
 const NAME = 'Dustoff';
-const SLOTS = 3;
+const SLOTS = 4;
+const P1_SLOT = 3;
 const PROTO = 1001;
 const SERVER_ID = (Math.random() * 0xffffffff) >>> 0;
 
@@ -161,11 +164,17 @@ function pushSlot(slot) {
     if (!c.all && !c.slots.has(slot)) continue;
     msg = msg || padData(slot, pads[slot], ++counters[slot]);
     sendTo(c, msg);
+    stats.sent++;
   }
 }
+// Counters for the log (which emulators connected, what they asked for, what was sent).
+const stats = { requests: {}, clients: new Set(), sent: 0, lastP1: 0 };
 function onMessage(msg, rinfo) {
   if (msg.length < 20 || msg.toString('ascii', 0, 4) !== 'DSUC') return;
   const type = msg.readUInt32LE(16);
+  stats.clients.add(rinfo.port);
+  const rk = type.toString(16) + (type === 0x100002 && msg.length >= 22 ? `/f${msg[20]}s${msg[21]}` : '');
+  stats.requests[rk] = (stats.requests[rk] || 0) + 1;
   const c = { addr: rinfo.address, port: rinfo.port };
   if (type === 0x100000) sendTo(c, versionResponse());
   else if (type === 0x100001 && msg.length >= 28) {
@@ -188,7 +197,11 @@ function onMessage(msg, rinfo) {
   }
 }
 
-function start() {
+// Several parts of Dustoff can need the server at once (a friend session, Player 1's controller),
+// so it keeps running until every one of them has called stop().
+const users = new Set();
+function start(owner = 'coop') {
+  users.add(owner);
   if (sock) return Promise.resolve();
   return new Promise((resolve, reject) => {
     const s = dgram.createSocket('udp4');
@@ -207,7 +220,13 @@ function start() {
     });
   });
 }
-function stop() {
+function stop(owner = 'coop') {
+  users.delete(owner);
+  if (users.size) {
+    if (owner === 'coop') for (let i = 0; i < P1_SLOT; i++) pads[i] = Object.assign({}, NEUTRAL);
+    if (owner === 'p1') pads[P1_SLOT] = Object.assign({}, NEUTRAL);
+    return;
+  }
   clearInterval(tick);
   tick = null;
   clients.clear();
@@ -226,8 +245,16 @@ function setPad(slot, st) {
   p.b = st.b & 0xffff;
   for (const k of ['lt', 'rt']) p[k] = Math.max(0, Math.min(255, +st[k] || 0));
   for (const k of ['lx', 'ly', 'rx', 'ry']) p[k] = Math.max(-32768, Math.min(32767, +st[k] || 0));
+  if (slot === P1_SLOT) stats.lastP1 |= p.b;
   pushSlot(slot);
 }
 const clearPad = slot => setPad(slot, NEUTRAL);
 
-module.exports = { start, stop, setPad, clearPad, PORT, NAME, SLOTS, X, _test: { padData, crc32 } };
+const statsText = () =>
+  JSON.stringify({
+    clients: stats.clients.size,
+    requests: stats.requests,
+    sent: stats.sent,
+    p1Buttons: stats.lastP1.toString(16),
+  });
+module.exports = { statsText, start, stop, setPad, clearPad, PORT, NAME, SLOTS, P1_SLOT, X, _test: { padData, crc32 } };

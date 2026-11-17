@@ -190,7 +190,7 @@ function settingsRender() {
         </button>
         <div class="row">
           <button class="sbtn" data-f data-act="fs-now">Toggle fullscreen now</button
-          ><span style="color:#8a90a3">or press F11, or View on the controller</span>
+          ><span style="color:#8a90a3">or press F11, or ${padName('View')} on the controller</span>
         </div>
       </section>
       <section class="card">

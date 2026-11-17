@@ -1,5 +1,14 @@
 # What's new in Dustoff
 
+## 0.1.5: Any controller (2026-11-17)
+
+- PlayStation 4 and 5, Switch Pro and most other controllers now work in every game, not just Xbox controllers.
+- Buttons go by where they are, not what's printed on them, so the bottom button always does what A does on an Xbox controller.
+- Menus show your controller's own buttons: Cross and Circle on PlayStation, B and A on a Switch Pro Controller.
+- Hold Share + Options (PlayStation) or − + + (Switch Pro) in a game for the in-game menu.
+- Xbox controllers work exactly the same as before.
+- Switch games still use the controller you picked in Ryubing.
+
 ## 0.1.4: Your games on a shelf (2026-11-16)
 
 - New default look: every system gets its own wooden shelf, and your games stand on it spine-out like a real collection.

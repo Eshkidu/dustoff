@@ -184,6 +184,79 @@ const section = t => console.log('\n' + t);
     if ((x.match(/<entry>/g) || []).length < 15 || !/<\/emulated_controller>/.test(x))
       throw new Error('incomplete XML');
   });
+  // PlayStation / Switch Pro / other controllers (Player 1 not on an Xbox controller).
+  const sdlPad = { kind: 'sdl', type: 'ps', name: 'PS5 Controller', index: 1 };
+  await test('other controllers: RetroArch uses SDL with position-based binds', () => {
+    const l = controls.apply({ sys: 'snes' }, settings, sdlPad);
+    for (const want of [
+      'input_joypad_driver = "sdl2"',
+      'input_player1_joypad_index = "1"',
+      'input_player1_a_btn = "1"', // SNES A = right face button
+      'input_player1_b_btn = "0"', // SNES B = bottom face button
+      'input_player1_l_btn = "9"',
+      'input_menu_toggle_btn = "5"',
+    ])
+      if (!l.includes(want)) throw new Error('missing ' + want);
+    const x = controls.apply({ sys: 'snes' }, settings, { kind: 'xinput' });
+    if (x.some(s => /joypad_driver/.test(s)) || !x.includes('input_player1_a_btn = "1"'))
+      throw new Error('Xbox binds changed');
+  });
+  await test('other controllers: N64 stick up is SDL axis -1', () => {
+    const l = controls.apply({ sys: 'n64' }, settings, sdlPad);
+    if (!l.includes('input_player1_l_y_minus_axis = "-1"')) throw new Error('stick up wrong');
+  });
+  await test("other controllers: Dolphin reads Player 1 from Dustoff's DSU feed", () => {
+    controls.apply({ sys: 'gc' }, settings, sdlPad);
+    const cfg = path.join(P.dolphin, 'User', 'Config');
+    const t = fs.readFileSync(path.join(cfg, 'GCPadNew.ini'), 'utf8');
+    if (!/Device = DSUClient\/3\/Dustoff/.test(t)) throw new Error('device');
+    if (!/Buttons\/A = `Cross`/.test(t)) throw new Error('A not on Cross');
+    if (!/Enabled = True/.test(fs.readFileSync(path.join(cfg, 'DSUClient.ini'), 'utf8'))) throw new Error('DSU off');
+    controls.apply({ sys: 'wii' }, { controls: { wii: { mode: 'cls', map: {} } } }, sdlPad);
+    const w = fs.readFileSync(path.join(cfg, 'WiimoteNew.ini'), 'utf8');
+    if (!/\[Wiimote1\][^[]*Device = DSUClient\/3\/Dustoff/.test(w)) throw new Error('Wii device');
+    controls.apply({ sys: 'gc' }, settings, { kind: 'xinput' });
+    if (!/Device = XInput\/0\/Gamepad/.test(fs.readFileSync(path.join(cfg, 'GCPadNew.ini'), 'utf8')))
+      throw new Error('Xbox not restored');
+  });
+  await test("other controllers: Cemu reads Player 1 from Dustoff's DSU feed", () => {
+    controls.apply({ sys: 'wiiu' }, settings, sdlPad);
+    const f = path.join(P.cemu, 'portable', 'controllerProfiles', 'controller0.xml');
+    const x = fs.readFileSync(f, 'utf8');
+    if (!/<api>DSUController<\/api>/.test(x) || !/<uuid>3<\/uuid>/.test(x) || !/<port>26770<\/port>/.test(x))
+      throw new Error('not on DSU slot 3');
+    if ((x.match(/<entry>/g) || []).length < 15) throw new Error('incomplete XML');
+    controls.apply({ sys: 'wiiu' }, settings);
+    if (!/<api>XInput<\/api>/.test(fs.readFileSync(f, 'utf8'))) throw new Error('Xbox not restored');
+  });
+  await test('DSU server keeps running while a friend session or Player 1 still needs it', async () => {
+    const dsu = require(path.join(APP, 'lib', 'dsu'));
+    await dsu.start('p1');
+    await dsu.start('coop');
+    dsu.stop('coop');
+    const dgram = require('dgram');
+    const s = dgram.createSocket('udp4');
+    const got = await new Promise(res => {
+      const t = setTimeout(() => res(false), 1500);
+      s.on('message', m => {
+        clearTimeout(t);
+        res(m.readUInt32LE(16) === 0x100000);
+      });
+      const q = Buffer.alloc(20);
+      q.write('DSUC', 0, 'ascii');
+      q.writeUInt16LE(1001, 4);
+      q.writeUInt32LE(0x100000, 16);
+      s.send(q, dsu.PORT, '127.0.0.1');
+    });
+    s.close();
+    dsu.stop('p1');
+    if (!got) throw new Error('server stopped too early');
+  });
+  await test('controller reader loads without errors', () => {
+    const native = require(path.join(APP, 'lib', 'native'));
+    native.padSource();
+    native.readPadFull();
+  });
   await test('Switch controls fail clearly when no controller is set up', () => {
     try {
       controls.apply({ sys: 'switch' }, settings);

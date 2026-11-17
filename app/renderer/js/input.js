@@ -300,18 +300,59 @@ addEventListener('keydown', e => {
   }
 });
 
-/* ---------- Xbox controller (Gamepad API) ---------- */
+/* ---------- controller (Gamepad API) ---------- */
 const pad = { held: {}, next: {} };
 let padSeen = false,
   lastPad = null;
+// Button names for the controller in use. Buttons work by position everywhere, so the bottom face
+// button is A on Xbox, Cross on PlayStation and B on a Switch Pro controller. Every .g button
+// picture on screen is relabeled automatically (relabelPads).
+const PAD_NAMES = {
+  ps: { A: '✕', B: '○', X: '□', Y: '△', LB: 'L1', RB: 'R1', LT: 'L2', RT: 'R2', Menu: 'Options', View: 'Share' },
+  nin: { A: 'B', B: 'A', X: 'Y', Y: 'X', LB: 'L', RB: 'R', LT: 'ZL', RT: 'ZR', Menu: '+', View: '−' },
+};
+const PAD_TITLES = {
+  xbox: 'Xbox controller connected',
+  ps: 'PlayStation controller connected',
+  nin: 'Switch Pro Controller connected',
+};
+let padType = 'xbox';
+const padName = k => (PAD_NAMES[padType] || {})[k] || k;
+function padTypeOf(gp) {
+  const id = (gp && gp.id) || '';
+  if (/054c|sony|playstation|dualsense|dualshock/i.test(id)) return 'ps';
+  if (/057e|nintendo|pro controller/i.test(id)) return 'nin';
+  return 'xbox';
+}
+function relabelPads() {
+  document.querySelectorAll('.g').forEach(el => {
+    if (!el.dataset.k) el.dataset.k = el.textContent.trim();
+    const t = padName(el.dataset.k);
+    if (el.textContent !== t) el.textContent = t;
+  });
+}
+new MutationObserver(() => padType !== 'xbox' && relabelPads()).observe(document.body, {
+  childList: true,
+  subtree: true,
+});
 function padStatus(gp) {
   const on = !!gp;
   $('#padpill').classList.toggle('on', on);
+  if (on) {
+    const t = padTypeOf(gp);
+    if (t !== padType) {
+      padType = t;
+      document.body.dataset.pad = t;
+      relabelPads();
+    }
+  }
   $('#padtxt').textContent = !on
     ? 'Press a button on your controller'
     : /xbox|xinput|045e/i.test(gp.id)
-      ? 'Xbox controller connected'
-      : 'Controller connected';
+      ? PAD_TITLES.xbox
+      : padType !== 'xbox'
+        ? PAD_TITLES[padType]
+        : 'Controller connected';
 }
 addEventListener('gamepadconnected', e => padStatus(e.gamepad));
 addEventListener('gamepaddisconnected', () => {

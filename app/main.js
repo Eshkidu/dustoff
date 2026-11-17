@@ -199,6 +199,7 @@ runner.setHooks({
         sys: SYS[g.sys].name,
         canState: kind === 'ra' || kind === 'dolphin',
         playSeconds: g.playSeconds || 0,
+        pad: (require('./lib/native').padSource() || {}).type || 'xbox',
       });
       overlay.showInactive();
       overlay.setAlwaysOnTop(true, 'screen-saver');

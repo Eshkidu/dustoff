@@ -38,7 +38,7 @@ function ctlClose() {
 }
 function ctlValueLabel(x, v) {
   const D = CDEF();
-  return x.type === 'group' ? D.groups[v] || v : D.inputs[v] || v;
+  return x.type === 'group' ? D.groups[v] || v : padName(D.inputs[v] || v);
 }
 function ctlRender() {
   const c = state.ctl,

@@ -191,6 +191,24 @@ input {
   background: var(--btn-y);
   color: #1a1a1a;
 }
+/* PlayStation and Switch Pro controllers: plain face buttons (the Xbox colors would mislead). */
+body[data-pad='ps'] .g.a,
+body[data-pad='ps'] .g.b,
+body[data-pad='ps'] .g.x,
+body[data-pad='ps'] .g.y,
+body[data-pad='nin'] .g.a,
+body[data-pad='nin'] .g.b,
+body[data-pad='nin'] .g.x,
+body[data-pad='nin'] .g.y {
+  background: #3a3f4d;
+  color: #fff;
+}
+body[data-pad='ps'] .g.a,
+body[data-pad='ps'] .g.b,
+body[data-pad='ps'] .g.x,
+body[data-pad='ps'] .g.y {
+  font-size: 14px;
+}
 .g.bump,
 .g.view,
 .g.trig {

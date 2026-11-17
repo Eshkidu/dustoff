@@ -11,7 +11,7 @@
   </a>
 </p>
 
-<p align="center"><sub>v0.1.4 · 329 MB · from <a href="../../releases">GitHub Releases</a> · Free and open source<br>Open the installer, wait about a minute, and Dustoff starts. If Windows says "Windows protected your PC", click <b>More info</b>, then <b>Run anyway</b>.</sub></p>
+<p align="center"><sub>v0.1.5 · 329 MB · from <a href="../../releases">GitHub Releases</a> · Free and open source<br>Open the installer, wait about a minute, and Dustoff starts. If Windows says "Windows protected your PC", click <b>More info</b>, then <b>Run anyway</b>.</sub></p>
 
 ![Dustoff home screen](screenshots/home.png)
 
@@ -31,7 +31,7 @@
 ## What it does
 
 - **Drag and drop.** Drop game files, zips or a whole folder onto the window. Each game is recognized, sorted by system and gets its cover art.
-- **Controller everywhere.** Menus, search, an on-screen keyboard and an in-game menu (hold View + Menu). Built for Xbox controllers today, with support for PlayStation, Switch Pro, 8BitDo and other controllers coming soon.
+- **Any controller, everywhere.** Xbox, PlayStation 4 and 5, Switch Pro, 8BitDo and most other controllers work in every game. Buttons go by position, and the menus show your controller's own button names. Menus, search, an on-screen keyboard and an in-game menu (hold View + Menu, Share + Options, or − + +).
 - **Your buttons, your way.** Remap any console button per system, or per game.
 - **Continue where you left off.** Quitting saves your spot automatically on supported systems.
 - **Themes.** Ten original looks inspired by different console eras, each with its own menu sounds.
