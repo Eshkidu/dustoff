@@ -10,6 +10,8 @@ function move(dx, dy) {
     focusEl((root === stage && stage.querySelector(`[data-game="${state.sel}"]`)) || items[0]);
     return;
   }
+  if (root === stage && cur.classList.contains('sh-box') && shelfMove(cur, dx, dy)) return;
+  if (dx) shelfX = null;
   const r = cur.getBoundingClientRect(),
     cx = r.left + r.width / 2,
     cy = r.top + r.height / 2;
@@ -31,6 +33,58 @@ function move(dx, dy) {
     }
   }
   if (best) focusEl(best);
+}
+// Shelf theme: fixed rules instead of "closest thing in that direction", because the shelves wrap side
+// by side and the picked case widens as it turns out, which made the general rule jump around.
+// Left/right: the next game along the shelf, then on to the next shelf. Up/down: the shelf above or
+// below on screen, landing on the game nearest the same spot (remembered while you keep going up/down).
+let shelfX = null;
+function shelfMove(cur, dx, dy) {
+  const shelves = [...stage.querySelectorAll('.sh-shelf')];
+  const spines = s => [...s.querySelectorAll('.sh-box[data-f]')].filter(e => e.offsetParent !== null);
+  const here = cur.closest('.sh-shelf');
+  if (!here) return false;
+  if (dx) {
+    shelfX = null;
+    const list = shelves.flatMap(spines);
+    const next = list[list.indexOf(cur) + dx];
+    if (next) focusEl(next);
+    return true;
+  }
+  if (!dy) return false;
+  const cr = cur.getBoundingClientRect();
+  if (shelfX == null) shelfX = cr.left + cr.width / 2;
+  const hr = here.getBoundingClientRect();
+  let best = null,
+    bs = Infinity;
+  for (const s of shelves) {
+    if (s === here) continue;
+    const q = s.getBoundingClientRect();
+    const gap = dy > 0 ? q.top - (hr.bottom - 8) : hr.top + 8 - q.bottom;
+    if (gap < 0) continue; // not above / below this shelf
+    const off = shelfX < q.left ? q.left - shelfX : shelfX > q.right ? shelfX - q.right : 0;
+    const score = gap + off * 3;
+    if (score < bs) {
+      bs = score;
+      best = s;
+    }
+  }
+  if (!best) {
+    shelfX = null;
+    return false; // top or bottom row: let the normal rule reach the bar above
+  }
+  let pick = null,
+    pd = Infinity;
+  for (const e of spines(best)) {
+    const q = e.getBoundingClientRect(),
+      d = Math.abs(q.left + q.width / 2 - shelfX);
+    if (d < pd) {
+      pd = d;
+      pick = e;
+    }
+  }
+  if (pick) focusEl(pick);
+  return true;
 }
 function cycleSys(d) {
   const opts = ['all', ...present()];

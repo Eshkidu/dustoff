@@ -1,7 +1,7 @@
 {
   "name": "game-launcher-hub",
   "productName": "Dustoff",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "private": true,
   "main": "main.js",
   "scripts": {

@@ -135,7 +135,9 @@ stage.addEventListener('pointermove', e => {
   lastMouse = at;
   const el = e.target.closest('[data-game]');
   // Shelf cases only turn out when picked, so hovering doesn't shuffle the shelf under the pointer.
-  if (el && !el.classList.contains('sh-box') && document.activeElement !== el) {
+  // Library: hovering never changes the picked game (clicking does), so the mouse can cross the grid
+  // on its way to the Play button.
+  if (el && !el.classList.contains('sh-box') && state.screen !== 'lib' && document.activeElement !== el) {
     setMode('kb');
     userInput();
     el.focus({ preventScroll: true });
@@ -162,6 +164,21 @@ stage.addEventListener('click', async e => {
   if (b.dataset.game) {
     if (b.classList.contains('sh-box')) return shelfOpen(b);
     const g = byId(b.dataset.game);
+    // Library: picking a game only selects it; the Play button starts it. Picking the selected game
+    // again (A on a controller) jumps to its Play button.
+    if (state.screen === 'lib') {
+      if (state.sel === g.id && document.activeElement === b && e.detail === 0) {
+        const p = $('#lbdetail .lb-play');
+        if (p) focusEl(p);
+        return;
+      }
+      if (document.activeElement !== b) focusEl(b);
+      if (state.sel !== g.id) {
+        state.sel = g.id;
+        select(g);
+      }
+      return;
+    }
     return launchGame(g.id, !!g.resume);
   }
   if (b.dataset.sys) {

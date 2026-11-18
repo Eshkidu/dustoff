@@ -1,5 +1,12 @@
 # What's new in Dustoff
 
+## 0.1.6: Easier to get around (2026-11-17)
+
+- Moving around the Shelf with a controller now goes where you expect: left and right go along a shelf, and up and down go to the shelf above or below, landing on the game in the same spot.
+- In the Library, hovering over games with the mouse no longer changes which game is picked.
+- Clicking a game in the Library picks it, and it stays picked until you click another. Only the Play button starts it.
+- With a controller in the Library, press A on a game to jump to its Play button.
+
 ## 0.1.5: Any controller (2026-11-17)
 
 - PlayStation 4 and 5, Switch Pro and most other controllers now work in every game, not just Xbox controllers.
